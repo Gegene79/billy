@@ -1,0 +1,22 @@
+{
+  "name": "billy",
+  "version": "1.0.0",
+  "description": "private web built on express.js, mongo and docker",
+  "main": "app.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gegene79/billy.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Gegene79/billy/issues"
+  },
+  "homepage": "https://github.com/Gegene79/billy#readme",
+  "dependencies": {
+    "express": "^4.16.4"
+  }
+}
