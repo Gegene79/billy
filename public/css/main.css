@@ -1,0 +1,194 @@
+#main-container {
+    padding-top: 80px;
+  }
+.navbar>.container .navbar-brand, .navbar>.container-fluid .navbar-brand {
+    margin-left: 0;
+}
+
+.fixed-bar-top{
+    display: block;
+    height: 40px;
+    position: fixed;
+    margin: 10px;
+}
+
+
+.starter-template {
+  padding: 40px 15px;
+  text-align: center;
+}
+
+text {
+    font: 12px sans-serif;
+}
+.svg {
+    display: block;
+    height:100%;
+}
+#chart_week{
+    height: 27em;
+    width: 100%;
+}
+#chart_6hours{
+    height: 13em;
+    height: 100%;
+}
+#chart_baseline{
+    height: 27em;
+    width: 100%;
+}
+#title{
+    font-family: 'Dancing Script', cursive;
+    font-size: 2em;
+}
+
+.temperature-title{
+    display: table-row;
+    vertical-align: bottom;
+    font-size: 1.5em;
+    text-align: center;
+    line-height: 100%;
+    font-family: 'Open Sans', sans-serif;
+    color: #aaa;
+}
+
+.temperature-number{
+    display: table-cell;
+    text-align: center;
+    vertical-align: top;
+    line-height: 100%;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 3.5em;
+}
+
+.temperature-unit{
+    display: table-cell;
+    text-align: left;
+    vertical-align: top;
+    line-height: 100%;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 1em;
+}
+
+.temperature-date{
+    display: table-row;
+    vertical-align: top;
+    width: 100%;
+    font-size: 1em;
+    text-align: right;
+    color: #aaa;
+}
+
+#IndicatorContainer{
+    display:flex;justify-content:center;align-items:center;
+}
+#ExteriorIndicator{
+    position: absolute;
+}
+.col-md-2{
+    display:flex;justify-content:center;align-items:center;
+    padding: 10px;
+}
+
+.equal {
+    padding-top:15px;
+    padding-bottom:15px;
+    justify-content:center;align-items:center;
+}
+
+
+/* parte photos */
+
+.blueimp-gallery > .description {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  color: #aaa;
+  display: none;
+}
+.blueimp-gallery-controls > .description {
+  display: block;
+}
+
+
+
+.card-link:hover .fondo{
+    opacity: 1;
+    transition: opacity 200ms;
+}
+
+
+/* .card-img{
+    position: absolute;
+    bottom: 0;
+    top: 0;
+    right: 0;
+    left: 0;;
+    height: 100%;
+    width: 100%;
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    overflow: hidden;
+} */
+
+.fondo{
+    background: linear-gradient(
+                rgba(0, 0, 0, 0.3),
+                rgba(0, 0, 0, 0.0)
+                );
+    opacity: 0;
+}
+   
+
+.icon-overlay{
+    color: whitesmoke;
+    opacity: 0.5;
+    z-index: 20;
+}
+
+.icon-overlay:hover {
+    color:white;
+    opacity: 1;
+}
+
+.icon-overlay:hover ~ .card-link>.fondo{
+    opacity: 1;
+}
+
+
+.tarjeta{
+    flex-grow: 1;
+    margin: 2px;
+    height: 200 px;
+    overflow: hidden;
+    position: relative;
+}
+
+.img-tarjeta{
+    height: 200px;
+    object-fit: cover;
+    max-width: 100%;
+    min-width: 100%;
+    vertical-align: bottom;
+}
+
+.modal-content{
+    width:auto;
+}
+
+.img-modal{
+    max-height: 400px;
+}
+
+#preview{
+    position:fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding-top: 74px;
+    padding-bottom: 30px;
+}
+
+#modal-photo{
+    position:fixed;
+}
