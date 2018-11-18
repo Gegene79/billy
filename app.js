@@ -7,6 +7,10 @@ const logger = require('morgan');
 const mongoose = require('mongoose');
 const errorHandler = require('errorhandler');
 const cors = require('cors');
+var session = require('express-session');
+const flash = require('connect-flash');
+const e = require('./config/error');
+const debug = require('debug');
 //Configure isProduction variable
 const isProduction = (process.env.NODE_ENV === 'production');
 
@@ -17,12 +21,15 @@ const app = express();
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser(process.env.SECRET));
+app.use(session({cookie: { maxAge: 60000 }}));
+app.use(flash());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(cors());
 
 if(!isProduction) {
   app.use(errorHandler());
+  
 }
 
 //Configure Mongoose
@@ -50,26 +57,37 @@ mongoose.set('debug', !isProduction);
 // Modelos
 require('./models/users');
 
-//Error handlers & middlewares
-app.use((err, req, res, next) => {
-  
-  if (typeof (err) === 'string') {
-    // custom application error
-    return res.status(400).json({ message: err });
-  }
-
-  if (err.name === 'UnauthorizedError') {
-    // jwt authentication error
-    return res.status(401).json({ message: 'Invalid Token' });
-  }
-
-  // default to 500 server error
-  return res.status(500).json({ message: err.message });
-
-});
-
-
 // declare routes
 app.use(require('./routes'));
+app.use(express.static('public'));
+
+//Error handlers & middlewares
+app.use(function authError(err, req, res, next) {
+  
+  debug(err.constructor.name);
+
+  if (err instanceof e.UnauthorizedError) {
+    // jwt authentication error
+    req.flash('warning', err.message);
+    return res.redirect('/login.html');
+  }
+  next(err);
+});
+
+app.use(function credentialsError(err, req, res, next) {
+  
+  if (err instanceof e.CredentialsError) {
+    // jwt authentication error
+    req.flash('critical', err.message);
+    return res.redirect('/login.html');
+  }
+  next(err);
+});
+
+app.use(function otherError(err, req, res, next) {
+  
+  // default to 500 server error
+  return res.status(500).json({ message: err.message });
+});
 
 module.exports = app;

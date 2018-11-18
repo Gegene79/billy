@@ -1,2 +1,2 @@
 # billy
-private web built on express.js, mongo and docker
+Private web built on express.js, mongo and docker
