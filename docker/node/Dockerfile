@@ -2,8 +2,11 @@ FROM node:8.12-slim
 RUN mkdir /app
 WORKDIR /app
 RUN ls -lah
-COPY package*.json ./
+RUN apt-get update 
+RUN apt-get install -y build-essential
+RUN apt-get install -y python
+COPY ./app/package*.json ./
 RUN npm install
-COPY . .
+COPY ./app/* .
 EXPOSE 3000
-CMD node ./apps.js
+CMD node ./app.js
