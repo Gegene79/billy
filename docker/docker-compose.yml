@@ -1,17 +1,17 @@
 # 
 # Docker compose para crear un front con 2 backend: mongo y un broker MQTT
 #
-######################################################################
-version: "3"
+
+version: "3.3"
 services:
-  database:
+  mongo:
     # -p 27017:27017 --name billy-mongo -v /mnt/sda/data/mongo/:/data/db billy-mongo --auth
     image: billy-mongo
     build: ./mongo/
     volumes:
-      - type: volume
-        source: /mnt/sda/data/mongo/ # on host
-        target: /data/db # in container
+      - type: "volume"
+        source: "/mnt/sda/data/mongo/" # on host
+        target: "/data/db" # in container
     deploy: 
       restart_policy:
         condition: on-failure
@@ -23,9 +23,9 @@ services:
     image: billy-mqtt
     build: ./mqtt/
     volumes:
-      - type: volume
-        source: /docker/mosquitto/config/
-        target: /mosquitto/conf/ 
+      - type: "volume"
+        source: "/docker/mqtt/config/"
+        target: "/mosquitto/conf/" 
     deploy: 
       restart_policy:
         condition: on-failure
