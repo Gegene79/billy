@@ -56,10 +56,12 @@ mongoose.set('debug', !isProduction);
 
 // Modelos
 require('./models/users');
+require('./models/metrics');
 
 // declare routes
 app.use(require('./routes'));
 app.use(express.static('public'));
+require('./mqtt/mqtt');
 
 //Error handlers & middlewares
 app.use(function authError(err, req, res, next) {

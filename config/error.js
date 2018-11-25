@@ -22,7 +22,7 @@ class EmailTakenError extends BillyError {
     }
 };
 
-class DataBaseError extends BillyError {
+class DatabaseError extends BillyError {
     constructor (message) {
       // Providing default message and overriding status code.
       super(message || 'Error de base de datos', 500);
@@ -49,4 +49,4 @@ class CredentialsError extends BillyError {
     }
 };
 
-module.exports = {EmailTakenError,DataBaseError,InfoRequiredError,UnauthorizedError,CredentialsError};
+module.exports = {EmailTakenError,DatabaseError,InfoRequiredError,UnauthorizedError,CredentialsError};
