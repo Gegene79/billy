@@ -2,45 +2,48 @@
 # Docker compose para crear un front con 2 backend: mongo y un broker MQTT
 #
 
-version: "3.3"
+version: "3.5"
 services:
   mongo:
     # -p 27017:27017 --name billy-mongo -v /mnt/sda/data/mongo/:/data/db billy-mongo --auth
     image: billy-mongo
+    container_name: billy-mongo
     build: ./mongo/
+    restart: on-failure
     volumes:
-      - type: "volume"
-        source: "/mnt/sda/data/mongo/" # on host
-        target: "/data/db" # in container
-    deploy: 
-      restart_policy:
-        condition: on-failure
+      - /mnt/sda/data/mongo/:/data/db # in container
     ports:
     - "27017:27017"
+    networks:
+     - billy-network
+
   
   mqtt:
     # -p 1883:1883 --name billy-mosquitto -v /docker/mosquitto/config/:/mosquitto/conf/ billy-mosquitto
     image: billy-mqtt
+    container_name: billy-mqtt
     build: ./mqtt/
+    restart: on-failure
     volumes:
-      - type: "volume"
-        source: "/docker/mqtt/config/"
-        target: "/mosquitto/conf/" 
-    deploy: 
-      restart_policy:
-        condition: on-failure
+      - /docker/mqtt/config/:/mosquitto/conf/
     ports:
     - "1883:1883"
+    networks:
+     - billy-network
 
   node:
     # -u "node" -p 3000:3000 --name billy-node billy-node
     image: billy-node
+    container_name: billy-node
     build: ./node/
+    restart: on-failure
     depends_on:
       - mongo
       - mqtt
-    deploy:
-      restart_policy:
-        condition: on-failure
     ports:
-      - "3000:80"
+      - "80:3000"
+    networks:
+     - billy-network
+networks:
+  billy-network:
+    name: billy-network

@@ -7,6 +7,6 @@ RUN apt-get install -y build-essential
 RUN apt-get install -y python
 COPY ./app/package*.json ./
 RUN npm install
-COPY ./app/* .
+COPY ./app/ ./
 EXPOSE 3000
-CMD node ./app.js
+CMD npm start
