@@ -9,11 +9,11 @@ services:
     image: billy-mongo
     container_name: billy-mongo
     build: ./mongo/
-    restart: on-failure
+    restart: always
     volumes:
       - /mnt/sda/data/mongo/:/data/db # in container
     ports:
-    - "27017:27017"
+    - "981:27017"
     networks:
      - billy-network
 
@@ -23,11 +23,11 @@ services:
     image: billy-mqtt
     container_name: billy-mqtt
     build: ./mqtt/
-    restart: on-failure
+    restart: always
     volumes:
       - /docker/mqtt/config/:/mosquitto/conf/
     ports:
-    - "1883:1883"
+    - "980:1883"
     networks:
      - billy-network
 
@@ -36,7 +36,7 @@ services:
     image: billy-node
     container_name: billy-node
     build: ./node/
-    restart: on-failure
+    restart: always
     depends_on:
       - mongo
       - mqtt
@@ -44,6 +44,7 @@ services:
       - "80:3000"
     networks:
      - billy-network
+
 networks:
   billy-network:
     name: billy-network
