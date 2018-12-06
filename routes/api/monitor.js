@@ -3,6 +3,7 @@ var Promise = require("bluebird");
 var express = require('express');
 var router = express.Router();
 var myDate = require('moment');
+var { DateTime } = require('luxon');
 var db = require('../../common/db');
 var ini = new Date();
 var end = new Date();
@@ -53,8 +54,10 @@ function sendresult(res,result){
 
 router.use(function (req, res, next) {
 
-    ini = myDate().subtract(7,'days').startOf('day').toDate();      // default: since one week
-    end = myDate().toDate();                                        // default: up to now
+    ini = DateTime.local().plus({days:-7}).set({hour:0, minute:0, second:0}).toJSDate();
+    ini1 = myDate().subtract(7,'days').startOf('day').toDate();      // default: since one week
+    end1 = myDate().toDate();                                        // default: up to now
+    end = DateTime.local();
     sampling = 5*min;                                               // default: values are averaged on 5 mins intervals
 
     if (req.query.ini){

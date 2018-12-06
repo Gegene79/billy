@@ -32,16 +32,20 @@ client.on('message', function (topic, message) {
     // message is Buffer
     console.log('ha llegado: '+message.toString());
     // process message
-    message.value = Number(message.value);
-    if (!(message.period)) message.period = 'm';
-    if (!(message.timestamp)) message.timestamp = new Date();
-   
     // new object
     try{
         var metric = new Metric(JSON.parse(message.toString()));
     } catch (err){
         console.log("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
     }
+
+    metric.value = Number(metric.value);
+    metric.receivedAt = new Date();
+    metric.topic = topic;
+    if (!(metric.period)) metric.period = 'm';
+    if (!(metric.timestamp)) metric.timestamp = new Date();
+        else metric.timestamp = new Date(metric.timestamp);
+    
     // check if value is valid
     let key = metric.type+"."+metric.name;
     if (mbuffer.has(key)) {

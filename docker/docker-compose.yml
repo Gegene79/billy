@@ -17,7 +17,25 @@ services:
     networks:
      - billy-network
 
-  
+  elastic:
+    image: billy-elastic
+    container_name: billy-elastic
+    build: ./elastic
+    restart: always
+    environment:
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - /mnt/sda/data/elastic/:/usr/share/elasticsearch/data
+    ports:
+      - "982:9200"
+      - "983:9300"
+    networks:
+     - billy-network
+
   mqtt:
     # -p 1883:1883 --name billy-mosquitto -v /docker/mosquitto/config/:/mosquitto/conf/ billy-mosquitto
     image: billy-mqtt
@@ -40,6 +58,7 @@ services:
     depends_on:
       - mongo
       - mqtt
+      - elastic
     ports:
       - "80:3000"
     networks:
