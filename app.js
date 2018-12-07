@@ -62,7 +62,7 @@ require('./models/metrics');
 app.use(require('./routes'));
 app.use(express.static('public'));
 app.use('/js',express.static((__dirname + '/js')));
-require('./mqtt/mqtt');
+require('./mqtt/mqtt-elastic');
 
 //Error handlers & middlewares
 app.use(function authError(err, req, res, next) {

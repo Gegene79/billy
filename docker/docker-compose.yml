@@ -33,7 +33,7 @@ services:
     ports:
       - "982:9200"
       - "983:9300"
-    networks:
+    networks: 
      - billy-network
 
   mqtt:
