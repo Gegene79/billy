@@ -15,7 +15,7 @@ const el_client = new elastic.Client({
 // al momento de conectarse.
 const mq_client_opts = {
     clean: false,
-    clientId: 'billy-node-elastic'
+    clientId: process.env.MQ_CLIENTID
 };
 const pubsub_opts={
     qos: 2 // once-and-only-once
@@ -45,7 +45,7 @@ mq_client.on('message', function (topic, message) {
     metric.topic = topic;
     if (!(metric.period)) metric.period = 'm';
     if (!(metric.timestamp)) metric.timestamp = new Date();
-        else metric.timestamp = new Date(metric.timestamp);
+        else metric.timestamp = new Date(metric.timestamp*1000);
     
     // check if value is valid
     let key = metric.type+"."+metric.name;
@@ -56,7 +56,7 @@ mq_client.on('message', function (topic, message) {
 
         if ( (valuediff / timediff) > MAXDEV.get(metric.type) ){ 
             // too much metric change for elapsed time... do not insert data.
-            console.log("Erroneous value, difference of "+valuediff.toFixed(1)+" units in "+(timediff/1000).toFixed(0)+"seconds.");           
+            console.log("Erroneous value, difference of "+valuediff.toFixed(1)+" units in "+(timediff/1000).toFixed(0)+" seconds.");           
         }
     }
     mbuffer.set(key,metric); // add or replace in Map.
