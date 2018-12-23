@@ -74,11 +74,35 @@ router.use(function (req, res, next) {
 // get historical values for all metrics
 router.get('/', function(req, res, next) {
     
-
-
-    db.getMetrics(ini,end,sampling)
+    el_client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: {
+                "aggs": {
+                    "group": {
+                        "terms": {
+                            "field": "name"
+                        },
+                        "aggs": {
+                            "group_docs": {
+                                "top_hits": {
+                                    "size": 1,
+                                    "sort": [
+                                        {
+                                            "ts": {
+                                                "order": "desc"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+    })
     .then(transform)
-    .then(function(result){sendresult(res,result);})
+    .then((result)=>{sendresult(res,result);})
     .catch(function(error){
         next(error);
     });
@@ -87,8 +111,25 @@ router.get('/', function(req, res, next) {
 // get current values for all metrics
 router.get('/current', function(req, res, next) {
     
-    db.getCurrentValues(ini)
-    .then(function(result){sendresult(res,result);})
+    el_client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: {
+            query: {
+                match: {
+                    type: 'temperature'
+                }
+            },
+            collapse: {
+                "field" : "name" 
+            },
+            sort: [{timestamp: "desc"}], 
+            from: 1 
+        }
+
+    })
+    .then(transform)
+    .then((result)=>{sendresult(res,result);})
     .catch(function(error){
         next(error);
     });
@@ -98,11 +139,27 @@ router.get('/current', function(req, res, next) {
 // get historical values for all metrics of some type
 router.get('/:type', function(req, res, next) {
 
-    req.params.type
+    
 
-    db.getMetricsByType(req.params.type,ini,end,sampling)
+    el_client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: {
+            query: {
+                match: {
+                    type: req.params.type
+                }
+            },
+            collapse: {
+                "field" : "name" 
+            },
+            sort: [{timestamp: "desc"}], 
+            from: 1 
+        }
+
+    })
     .then(transform)
-    .then(function(result){sendresult(res,result);})
+    .then((result)=>{sendresult(res,result);})
     .catch(function(error){
         next(error);
     });  

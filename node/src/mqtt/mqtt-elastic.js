@@ -44,14 +44,14 @@ mq_client.on('message', function (topic, message) {
     metric.receivedAt = new Date();
     metric.topic = topic;
     if (!(metric.period)) metric.period = 'm';
-    if (!(metric.timestamp)) metric.timestamp = new Date();
-        else metric.timestamp = new Date(metric.timestamp*1000);
+    if (!(metric.ts)) metric.ts = new Date();
+        else metric.ts = new Date(metric.ts*1000);
     
     // check if value is valid
     let key = metric.type+"."+metric.name;
     if (mbuffer.has(key)) {
         let valuediff = Math.abs(metric.value - mbuffer.get(key).value);
-        let timediff = Math.abs(metric.timestamp.getTime() - mbuffer.get(key).timestamp.getTime());
+        let timediff = Math.abs(metric.ts.getTime() - mbuffer.get(key).ts.getTime());
         let limit = MAXDEV.get(metric.type);
 
         if ( (valuediff / timediff) > MAXDEV.get(metric.type) ){ 
@@ -67,6 +67,6 @@ mq_client.on('message', function (topic, message) {
         body: metric
       })
     .catch((err)=>{
-        console.log("Imposible insertar la metrica: "+metric.toString()+"\n"+err.toString());
+        console.log("Imposible insertar la metrica: "+JSON.stringify(metric)+"\n"+err.toString());
     });
 });
