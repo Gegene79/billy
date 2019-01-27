@@ -7,6 +7,7 @@ const APIKEY = '1e5dd90ebb1974b27d7fbb47ea12fab3';
 const TEMP_URL= "http://api.openweathermap.org/data/2.5/forecast?id="+CITYID+"&APPID="+APIKEY+"&units=metric";
 const id_name = new Map([
                         ["HABITACION_PRINCIPAL", "Habitación"],
+                        ["HABITACION", "Habitación"],
                         ["Habitación", "Habitación"], 
                         ["EMMA_PIERRE", "Niños"],
                         ["Emma", "Emma"],
@@ -22,6 +23,7 @@ var timerGraph2hours;
 var timerCurrentVal;
 var timerGraphWeek;
 //var timerBsGraph;
+var DateTime = luxon.DateTime;
 
 var chartWeek = nv.models.lineWithFocusChart();
 
@@ -114,12 +116,12 @@ function updateCurrentVal(){
             let id = val._id;
             let name = id_name.get(id);
             let temp= parseFloat(val.value);
-            let m = moment(val.timestamp);
+            let m = DateTime.fromJSDate(val.timestamp);
             let ts = "";
-            if(m.isBefore(new Date(),'day')){
-                ts = m.format('ddd DD/MM HH:mm:ss');
+            if(m < DateTime.local().startOf('day')){
+                ts = m.toFormat('ddd DD/MM HH:mm');
             } else {
-                ts = m.format('HH:mm:ss');
+                ts = m.toFormat('HH:mm');
             };
 
             // update radial indicator

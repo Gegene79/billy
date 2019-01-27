@@ -1,4 +1,4 @@
 "use strict";
-const API_BASEURL = "/api";
+const API_BASEURL = "/api/monitor";
 
 

@@ -1,37 +1,64 @@
 #include <Arduino.h>
 #include <TimeLib.h>
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <WiFiUDP.h>
 #include <PubSubClient.h>
 #include <NTPClient.h>
 #include <DHT.h>
 #define USE_SERIAL Serial
-#define DHTPIN D1
+#define DHTPIN 15
 #define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 DHT dht(DHTPIN, DHTTYPE);
 WiFiClient wifiClient;
 PubSubClient mqClient(wifiClient);
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP);
+
 const char* SSID = "bichito";     //  your network SSID (name)
-const char* PASS = "vivifafa";  // your network password
+const char* PASS = "";  // your network password
 const char* NAME = "SALON";  // EMMA_PIERRE, SALON, HABITACION
 const char* mqttServer = "192.168.1.2";
 const int   mqttPort = 980;
 const char* mqttUser = "fabien";
 const char* mqttPassword = "vivifafa";
 const char* TOPIC_BASE = "metrics/";
-const String TYPE_TEMP = "temperature";
-const String TYPE_HUM = "humidity";
 const char* TOPIC_PATH = "casa/";
-const long  INTERVAL = 60 * 1000; //60 seconds
+enum metric_type { temperature = 0 , humidity = 1 };
+const char* types[] = { "temperature", "humidity" };
+const int uS_TO_S_FACTOR = 1000000;  /* Conversion factor for micro seconds to seconds */
+const uint8_t TIME_TO_SLEEP = 5;        /* Time ESP32 will go to sleep (in seconds) */
+RTC_DATA_ATTR int bootCount = 0;
+#define LED_PIN 35
 
+
+/*
+Method to print the reason by which ESP32
+has been awaken from sleep
+*/
+void print_wakeup_reason(){
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch(wakeup_reason)
+  {
+    case 1  : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case 2  : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case 3  : Serial.println("Wakeup caused by timer"); break;
+    case 4  : Serial.println("Wakeup caused by touchpad"); break;
+    case 5  : Serial.println("Wakeup caused by ULP program"); break;
+    default : Serial.println("Wakeup was not caused by deep sleep"); break;
+  }
+}
+
+/*
+ * Class created to hold metrics readings
+ */
 class metric {
   private:
     unsigned long date = NULL;
-    String type;
+    metric_type type;
     float value = NULL;
-    String topic;
     boolean isValidType = false;
     boolean isValidDate = false;
     boolean isValidValue = false;
@@ -40,11 +67,13 @@ class metric {
     float readSensor(){
       float value = NULL;
       if (ValidType()){
-        if (type == TYPE_TEMP) {
+        if (type == temperature) {
           value = dht.readTemperature();
+          Serial.print("Temperature: ");Serial.print(value);Serial.println(" ºC");
         }
-        else if (type == TYPE_HUM) {
+        else if (type == humidity) {
           value = dht.readHumidity();
+          Serial.print("Humidity: ");Serial.print(value);Serial.println(" %");
         }
         if (!isnan(value)){
           this->isValidValue = true;
@@ -52,17 +81,9 @@ class metric {
       }
       return value;
     }
-
-    void setTopic(String type){
-      String b = String(NAME);
-      b.toLowerCase();
-      String a = String(TOPIC_BASE) + this->type + "/" + String(TOPIC_PATH) + b;
-      this->topic = a;
-      Serial.print("topic: ");Serial.println(this->topic);
-    }
     
   public:
-    metric(String type, unsigned long date, float value) {
+    metric(metric_type type, unsigned long date, float value) {
       Serial.print("New metric(type,date,value) - ");Serial.println(toString());
       setType(type);
       this->date = date;
@@ -71,8 +92,8 @@ class metric {
       this->isValidValue = true;
     }
     
-    metric(String type) {
-      Serial.print("New metric(type) - ");Serial.println(toString());
+    metric(metric_type type) {
+      Serial.print("New metric(");Serial.print(type);Serial.print(") - ");Serial.println(toString());
       setType(type);
     }
     
@@ -80,13 +101,12 @@ class metric {
     }
 
     String toString(){
-      return "name: " + String(NAME) + ", type: " + this->type + ", date:" + this->date + ", value: " + this->value;
+      return "name: " + String(NAME) + ", type: " + String(types[this->type]) + ", date:" + this->date + ", value: " + this->value;
     }
 
-    boolean init(String type){
+    boolean init(metric_type type){
       this->date = NULL;
       this->value = NULL;
-      this->topic = "";
       this->isValidType = false;
       this->isValidDate = false;
       this->isValidValue = false;
@@ -110,18 +130,16 @@ class metric {
       return this->isValidValue;
     }
     
-    boolean setType(String type){
-      if ((type==TYPE_TEMP) || (type==TYPE_HUM)){
-        this->type = type;
-        this->isValidType = true;
-        setTopic(type);
-        return true;
-      }
-      else {
-        Serial.print("Sensor type does not exist: ");Serial.println(type);
-        this->isValidType = false;
-        return false;
-      }
+    boolean setType(metric_type type){
+      this->type = type;
+      this->isValidType = true;
+      return true;
+    }
+
+    boolean setValue(float value){
+      this->value = value;
+      this->isValidValue = true;
+      return true;
     }
 
     boolean setDate(unsigned long date){
@@ -184,23 +202,72 @@ class metric {
     }
 
     String getTopicPath() {
-      return this->topic;
+      String sname = String(NAME);
+      sname.toLowerCase();
+      String stype = String(types[this->type]);
+      stype.toLowerCase();
+      String result = String(TOPIC_BASE) + stype + "/" + String(TOPIC_PATH) + sname;
+      return result;
     }
     
     String getPayload() {
       String message = "{\"name\":\"" + String(NAME) + "\",\"type\":\"" + this->type + "\",\"value\":" + this->value + ",\"ts\":" + this->date + "}";
       return message;
     }
+
+    boolean send_results(){
+      boolean result = false;
+      int retry = 0;
+      String payload_s = this->getPayload();
+      String topic_s = this->getTopicPath();
+      
+      char payload[128];
+      char topic[50];
+      payload_s.toCharArray(payload,128);
+      topic_s.toCharArray(topic,50);
+      
+      Serial.println("Connecting to MQTT broker...");
+      mqClient.connect(NAME, NULL, NULL);
+      
+      while (!mqClient.connected()) {
+        
+        if (retry >= 10){
+          Serial.print("\r\nFailed to connect to MQTT broker. Failed status: ");Serial.println(mqClient.state());
+          mqClient.disconnect();
+          return false;
+        }
+        else {
+          Serial.print(".");
+          delay(1000);
+          retry++;
+        }
+      }
+      Serial.print("Connected to broker. Sending message to: ");Serial.print(topic);
+      Serial.print(", payload: ");Serial.println(payload);
+      result = mqClient.publish(topic, payload);
+      if (!result) {
+        Serial.print("Error while sending message: ");Serial.println(payload_s);
+      } 
+      else {
+        Serial.print("Message sent: ");Serial.println(payload_s);
+      }
+      mqClient.disconnect();
+      return result;
+  }
+
+  float getValue(){
+    return this->value;
+  }
 };
 
-class messageBuffer {
+class MetricsBuffer {
   private:
     metric tableau[120];
     int current_measure = 0;
     
   public:
   
-    messageBuffer() {
+    MetricsBuffer() {
       this->current_measure = 0;
     }
     
@@ -212,7 +279,7 @@ class messageBuffer {
       return m;
     }
 
-    metric* fetch_new(String type) {
+    metric* fetch_new(metric_type type) {
       // JGsimpleClass* thisSimpleClass = &arrayInstances[1];
       Serial.print("New metric. ");
       metric* m = fetch();
@@ -245,7 +312,9 @@ class messageBuffer {
     }
 };
 
-messageBuffer metrics;
+// Keep metric buffer in RTC memory to survive deep sleep
+//RTC_DATA_ATTR MetricsBuffer metrics;
+
 
 void setup_wifi() {
   
@@ -269,89 +338,97 @@ void setup_wifi() {
   }
   Serial.print("\nConnected to ");Serial.print(String(SSID));
   Serial.print(", IP address: ");Serial.println(WiFi.localIP());
-};
- 
-boolean send_results(metric lectura){
-  boolean result = false;
-  int retry = 0;
-  String payload_s = lectura.getPayload();
-  String topic_s = lectura.getTopicPath();
-  
-  char payload[128];
-  char topic[50];
-  payload_s.toCharArray(payload,128);
-  topic_s.toCharArray(topic,50);
-  
-  Serial.println("Connecting to MQTT broker...");
-  mqClient.connect(NAME, NULL, NULL);
-  
-  while (!mqClient.connected()) {
-    
-    if (retry >= 10){
-      Serial.print("\r\nFailed to connect to MQTT broker. Failed status: ");Serial.println(mqClient.state());
-      mqClient.disconnect();
-      return false;
-    }
-    else {
-      Serial.print(".");
-      delay(1000);
-      retry++;
-    }
-  }
-  Serial.print("Connected to broker. Sending message to: ");Serial.print(topic);
-  Serial.print(", payload: ");Serial.println(payload);
-  result = mqClient.publish(topic, payload);
-  if (!result) {
-    Serial.print("Error while sending message: ");Serial.println(payload_s);
-  } 
-  else {
-    Serial.print("Message sent: ");Serial.println(payload_s);
-  }
-  mqClient.disconnect();
-  return result;
 }
+
+void blink(){
+  Serial.println("blink.");
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(500);
+  digitalWrite(LED_BUILTIN, HIGH);
+}
+
+struct metrica{
+  unsigned long date;
+  metric_type type;
+  float value; 
+};
+
+metric m(humidity,0,0.0);
+RTC_DATA_ATTR metrica m3 = { 0, temperature , 0.0 };
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.println("Initialization.");
-
-  setup_wifi();
-  timeClient.begin();
-  timeClient.forceUpdate();
-  mqClient.setServer(mqttServer, mqttPort);
-  dht.begin();
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
   boolean result = false;
   metric* record;
   
-  if (WiFi.status() != WL_CONNECTED){
-    setup_wifi();
-  }
-
-  timeClient.update();
-
-  metric* m = metrics.fetch_new(TYPE_HUM);
-  (*m).readValue();
-  (*m).retreiveDate();
-  if ((*m).isValid()){
-    metrics.commit();
-  }
-
-  m = metrics.fetch_new(TYPE_TEMP);
-  (*m).readValue();
-  (*m).retreiveDate();
-  if ((*m).isValid()){
-    metrics.commit();
-  }
+  Serial.begin(115200);
+  delay(1000); //Take some time to open up the Serial Monitor
+  // setup pin 5 as a digital output pin
+  pinMode (LED_BUILTIN, OUTPUT);
   
+  blink();
+  bootCount++;
+  Serial.println("Boot number: " + String(bootCount));
+  //Print the wakeup reason for ESP32
+  //print_wakeup_reason();
+
+  Serial.println("-- Valor al despertar --");
+  Serial.println(m.toString());
+  Serial.print("Struct: value=");Serial.println(m3.value);
+  
+  setup_wifi();
+  Serial.println("Wait.");
+  delay(TIME_TO_SLEEP * 1000);
+
+  blink();
+  delay(200);
+  blink();
+  
+  /*
+  Serial.println("Disable wifi.");
+  WiFi.mode(WIFI_OFF);
+  btStop();
+  */
+  
+  
+  float VBAT = (150.0f/100.0f) * 3.30f * float(analogRead(34)) / 4096.0f;  // LiPo battery
+  Serial.print("Voltage: ");Serial.print(VBAT);Serial.println(" V");
+  
+  
+  dht.begin();
+
+  Serial.println("-- Nuevo valor --");
+  m.setValue(bootCount);
+  m3.value = bootCount;
+  Serial.println(m.toString());
+  Serial.print("Struct: value=");Serial.println(m3.value);
+  
+  //metric m2(temperature);
+  //m2.readValue();
+
+
+  /*
+  metric* m = metrics.fetch_new(humidity);
+  (*m).readValue();
+  
+  (*m).retreiveDate();
+  if ((*m).isValid()){
+    metrics.commit();
+  }
+
+  m = metrics.fetch_new(temperature);
+  (*m).readValue();
+  (*m).retreiveDate();
+  if ((*m).isValid()){
+    metrics.commit();
+  }
+  */
+  
+  /*
   while (metrics.hasNext()){
     metrics.next();
     record = metrics.fetch();
-    result = send_results((*record));
+    result = record->send_results();
     if (result) {
       Serial.print("Data sent to ");Serial.println((*record).getTopicPath());
     } else {
@@ -360,9 +437,31 @@ void loop() {
       break;
     }
   }
+  */
   
-  mqClient.loop();
+  blink();
+  delay(200);
+  blink();
+  delay(200);
+  blink();
+
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  //Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
+
+  Serial.println("-- Valor antes del deep sleep --");
+  Serial.println(m.toString());
+  Serial.print("Struct: value=");Serial.println(m3.value);
   
-  // wait until next time interval
-  delay(INTERVAL);
+  Serial.println("Going to sleep now");
+  WiFi.mode(WIFI_OFF);
+  btStop();
+  Serial.flush();
+  
+  esp_deep_sleep_start();
+  Serial.println("This will never be printed");
+}
+
+void loop() {
+  // put your main code here, to run repeatedly. Actually this will never be called.
 }

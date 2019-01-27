@@ -8,34 +8,58 @@ const el_client = new elastic.Client({
     log: 'trace'
 });
 
-var ini = new Date();
-var end = new Date();
+var ini = DateTime.local();
+var end = DateTime.local();
 const min =  60*1000;
 const hour = 60*min;
 var sampling;
 
 /*** Utility functions ***/
 
-function transform(docs){
+function transform_q(docs){
 
     return new Promise(function(resolve,reject){
 
         var result = [];
-        docs.forEach(function(entry){
-            if (!((entry.avg == null) || (entry.avg == NaN))){
+        docs.hits.hits.forEach(function(entry){
+            if (!((entry._source.value == null) || (entry._source.value == NaN))){
 
-                var datapoint = { x: entry._id.timestamp, y: Math.round(entry.avg*10)/10 };
+                var datapoint = { x: entry._source.ts, y: Math.round(entry._source.value*10)/10 };
                 var exist_metric = result.find(function(a) {
-                        return (a.key == entry._id.name);
+                        return (a.key == entry._source.name);
                     });
 
                 if (exist_metric){ // la metrica con nombre _id.name ya esta en result, solo hay que añadir el datapoint
                     exist_metric.values.push(datapoint);
                 } else { // la metrica no esta en result, hay que añadirla con su primer datapoint
-                    var metric = {key : entry._id.name, values: [datapoint] };
+                    var metric = {key : entry._source.name, values: [datapoint] };
                     result.push(metric);
                 }
             }
+        });
+
+        return resolve(result);
+    });
+};
+
+function transform_a(docs){
+
+    return new Promise(function(resolve,reject){
+
+        var result = [];
+        docs.aggregations.nombres.buckets.forEach(function(entry){
+            
+            entry.cada_30mins.buckets.forEach((val)=>{
+                let datapoint = { x: val.key_as_string, y: Math.round(val.avg_temp.value*10)/10 };
+                
+                let exist_metric = result.find((a)=> {
+                    return (a.key == entry.key);
+                });
+                if (exist_metric)
+                    exist_metric.values.push(datapoint);
+                else 
+                    result.push({key: entry.key, values: [datapoint]});
+            });
         });
 
         return resolve(result);
@@ -52,16 +76,17 @@ function sendresult(res,result){
 router.use(function (req, res, next) {
 
     ini = DateTime.local().plus({days:-7}).set({hour:0, minute:0, second:0}).toJSDate();
-    ini1 = myDate().subtract(7,'days').startOf('day').toDate();      // default: since one week
-    end1 = myDate().toDate();                                        // default: up to now
+    //ini = myDate().subtract(7,'days').startOf('day').toDate();      // default: since one week
+    //end = myDate().toDate();                                        // default: up to now
     end = DateTime.local();
     sampling = 5*min;                                               // default: values are averaged on 5 mins intervals
 
     if (req.query.ini){
-        ini = myDate(req.query.ini).toDate();
+        //ini = DateTime.fromString(req.query.ini,'yyyy-MM-ddTHH:mm:ss.SSS').toJSDate();
+        ini = DateTime.fromISO(req.query.ini);
     } 
     if (req.query.end){
-        end = myDate(req.query.end).toDate();
+        end = DateTime.fromISO(req.query.end);
     }
     if (req.query.sampling){
         sampling = req.query.sampling*min;
@@ -114,21 +139,20 @@ router.get('/current', function(req, res, next) {
     el_client.search({
         index: 'metrics',
         type: '_doc',
-        body: {
-            query: {
-                match: {
-                    type: 'temperature'
+        body: 
+        {
+            "query": {
+                "match": {
+                    "type": "temperature"
                 }
             },
-            collapse: {
-                "field" : "name" 
+            "collapse" : {
+                "field" : "name.keyword" 
             },
-            sort: [{timestamp: "desc"}], 
-            from: 1 
+            "sort": {"ts": "desc"}
         }
-
     })
-    .then(transform)
+    .then(transform_q)
     .then((result)=>{sendresult(res,result);})
     .catch(function(error){
         next(error);
@@ -138,29 +162,46 @@ router.get('/current', function(req, res, next) {
 
 // get historical values for all metrics of some type
 router.get('/:type', function(req, res, next) {
-
     
-
     el_client.search({
         index: 'metrics',
         type: '_doc',
-        body: {
-            query: {
-                match: {
-                    type: req.params.type
+        body: 
+        {
+            "size": 0,
+            "query": {
+                "bool": {
+                   "filter": [ 
+                       { "term":  { "type": req.params.type } }, 
+                       { "range": { "ts": { "gte" : ini.toMillis(), "lt" :  end.toMillis()} } } 
+                       ]
                 }
-            },
-            collapse: {
-                "field" : "name" 
-            },
-            sort: [{timestamp: "desc"}], 
-            from: 1 
-        }
+           },
+           "aggs" : {
+               "nombres" : {
+                   "terms" : { "field" : "name.keyword" },
+                   "aggs" : {
+                       "cada_30mins": {
+                           "date_histogram": {
+                               "field": "ts",
+                               "interval": "30m"
+                           }
+                           ,
+                           "aggs": {
+                               "avg_temp": { "avg" : { "field" : "value" } }
+                               
+                           }
+                       }
+                   }
+               }
+           }
+       }
 
     })
-    .then(transform)
+    .then(transform_a)
     .then((result)=>{sendresult(res,result);})
     .catch(function(error){
+        console.log(JSON.stringify(error));
         next(error);
     });  
 });
@@ -168,23 +209,66 @@ router.get('/:type', function(req, res, next) {
 // get current values of all metrics of some type
 router.get('/:type/current', function(req, res, next) {
 
-    el_client.search(
-        
-        
-        
-        
-        req.params.type,ini)
-    .then(function(result){sendresult(res,result);})
-    .catch((error)=>{
+    el_client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: 
+        {
+            "query": {
+                "match": {
+                    "type": req.params.type
+                }
+            },
+            "collapse" : {
+                "field" : "name.keyword" 
+            },
+            "sort": {"ts": "desc"}
+        }
+    })
+    .then(transform_q)
+    .then((result)=>{sendresult(res,result);})
+    .catch(function(error){
+        console.log(JSON.stringify(error));
         next(error);
     });
 });
 
 // get historical values for a type and a name
 router.get('/:type/:name', function(req, res, next) {
-    
-    db.getMetricsByTypeAndName(req.params.type,req.params.name,ini,end,sampling)
-    .then(transform)
+    el_client.search({
+        index: 'metrics',
+        type: '_doc',
+        body:
+        {
+        "size": 0,
+        "query": {
+            "bool": {
+               "filter": [ 
+                   { "term":  { "type": "temperature" } }, 
+                   { "range": { "ts": { "gte" : "now-2d/d", "lt" :  "now"} } } 
+                   ]
+            }
+       },
+       "aggs" : {
+           "names" : {
+               "terms" : { "field" : "name.keyword" },
+               "aggs" : {
+                   "cada_30mins": {
+                       "date_histogram": {
+                           "field": "ts",
+                           "interval": "30m"
+                       }
+                       ,
+                       "aggs": {
+                           "avg_temp": { "avg" : { "field" : "value" } }
+                       }
+                   }
+               }
+           }
+       }
+   }
+})
+     .then(transform)
     .then(function(result){sendresult(res,result);})
     .catch(function(error){
         next(error);
