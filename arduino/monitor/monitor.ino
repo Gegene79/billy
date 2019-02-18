@@ -33,7 +33,7 @@ const char* TOPIC_PATH = "casa/";
 enum metric_type { temperature = 0 , humidity = 1 , voltage = 2};
 const char* TYPES[] = { "temperature", "humidity", "voltage" };
 const int uS_TO_S_FACTOR = 1000000;  /* Conversion factor for micro seconds to seconds */
-const uint8_t TIME_TO_SLEEP = 300;     /* Time ESP32 will go to sleep (in seconds) */
+const int TIME_TO_SLEEP = 300;     /* Time ESP32 will go to sleep (in seconds) */
 const uint8_t METRICS_BUFFER = 200;
 const unsigned long E1979 = 1546297200;
 const uint8_t RETRY = 2;
@@ -437,7 +437,7 @@ void setup() {
   Serial.print("Going to sleep now for ");Serial.print(TIME_TO_SLEEP);Serial.println("s.");
   Serial.flush();
   esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  esp_sleep_enable_timer_wakeup((uint64_t) TIME_TO_SLEEP * uS_TO_S_FACTOR);
   WiFi.mode(WIFI_OFF);
   btStop();
   
