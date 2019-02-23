@@ -23,16 +23,38 @@ const pubsub_opts={
 // lanza la conexión en modo persistente
 const mq_client  = mqtt.connect(process.env.MQ_URL,mq_client_opts);
 
-mq_client.on('connect', function () {
+mq_client.on('connect', () => {
+    debug("connected to "+process.env.MQ_URL);
     mq_client.subscribe(process.env.MQ_TOPIC+'/#', pubsub_opts, function (err) {
+        if (err) console.log(err.toString())
+        else debug("suscribed to "+process.env.MQ_TOPIC);
+    });
+    mq_client.subscribe(process.env.MQ_SENSOR_TOPIC+'/#', pubsub_opts, function (err) {
         if (err) console.log(err.toString());
+        else debug("suscribed to "+process.env.MQ_TOPIC);
     });
 });
 
-mq_client.on('message', function (topic, message) {
-    // message is Buffer
-    console.log('ha llegado: '+message.toString());
+mq_client.on('message', (topic, message) => {
+    // message in Queue
+    console.log('message in topic ' + topic + ': '+message.toString());
+    let topic_s = topic.split("/")[0];
     // process message
+    switch(topic_s){
+        case process.env.MQ_TOPIC: 
+            return processMetricMsg(topic,message);
+            break;
+        case process.env.MQ_SENSOR_TOPIC:
+            return processStatusMsg(topic,message);
+            break;
+        default:
+            console.log("Topic no valido: "+topic+", msg: "+message.toString()+ "\n"+err.toString());
+    }
+});
+
+
+function processMetricMsg(topic,message){
+
     // new object
     try{
         var metric = JSON.parse(message.toString());
@@ -62,11 +84,32 @@ mq_client.on('message', function (topic, message) {
     mbuffer.set(key,metric); // add or replace in Map.
 
     el_client.index({
-        index: 'metrics',
-        type: '_doc',
+        index: process.env.EL_METRIC_INDEX,
+        type: '_doc', // hard coded
         body: metric
-      })
+    })
     .catch((err)=>{
         console.log("Imposible insertar la metrica: "+JSON.stringify(metric)+"\n"+err.toString());
     });
-});
+};
+
+
+function processStatusMsg(topic, message){
+    try{
+        var status = JSON.parse(message.toString());
+    } catch (err){
+        console.log("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
+    }
+
+    status.receivedAt = new Date();
+    status.topic = topic;
+    
+    el_client.index({
+        index: process.env.EL_SENSOR_INDEX,
+        type: '_doc', // hard coded
+        body: status
+    })
+    .catch((err)=>{
+        console.log("Imposible insertar el status: "+JSON.stringify(status)+"\n"+err.toString());
+    });
+};
