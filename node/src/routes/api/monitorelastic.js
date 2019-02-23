@@ -24,15 +24,17 @@ function transform_q(docs){
         docs.hits.hits.forEach(function(entry){
             if (!((entry._source.value == null) || (entry._source.value == NaN))){
 
-                var datapoint = { x: entry._source.ts, y: Math.round(entry._source.value*10)/10 };
-                var exist_metric = result.find(function(a) {
-                        return (a.key == entry._source.name);
+                var exist_metric = result.find((a) => {
+                        return ((a._id == entry._source.name) && (a.type == entry._source.type));
                     });
 
                 if (exist_metric){ // la metrica con nombre _id.name ya esta en result, solo hay que añadir el datapoint
                     exist_metric.values.push(datapoint);
                 } else { // la metrica no esta en result, hay que añadirla con su primer datapoint
-                    var metric = {key : entry._source.name, values: [datapoint] };
+                    var metric = {  '_id' : entry._source.name,
+                                    'type': entry._source.type,
+                                    'timestamp': entry._source.ts, 
+                                    'value': Math.round(entry._source.value*10)/10 };
                     result.push(metric);
                 }
             }

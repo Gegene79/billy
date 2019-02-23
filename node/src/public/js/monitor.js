@@ -24,7 +24,7 @@ var timerCurrentVal;
 var timerGraphWeek;
 //var timerBsGraph;
 var DateTime = luxon.DateTime;
-
+DateTime.local().setLocale("es").locale;
 var chartWeek = nv.models.lineWithFocusChart();
 
 /*
@@ -116,10 +116,10 @@ function updateCurrentVal(){
             let id = val._id;
             let name = id_name.get(id);
             let temp= parseFloat(val.value);
-            let m = DateTime.fromJSDate(val.timestamp);
+            let m = DateTime.fromISO(val.timestamp);
             let ts = "";
             if(m < DateTime.local().startOf('day')){
-                ts = m.toFormat('ddd DD/MM HH:mm');
+                ts = m.setLocale('es').toFormat('ccc d LLL HH:mm');
             } else {
                 ts = m.toFormat('HH:mm');
             };
