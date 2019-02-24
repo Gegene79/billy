@@ -56,16 +56,16 @@ pipeline {
                 sh "scp -BCp -P 979 ${env.PACKAGE_NAME} ${env.TARGET_HOST}:${env.TEMP_PATH}/"
 
                 echo "Deflate ${env.TEMP_PATH}/${env.PACKAGE_NAME}"
-                sh "ssh -l fabien -p 979 petitbilly \"mkdir ${env.SW_PATH} && \
+                sh "ssh -l jenkins -p 979 petitbilly \"mkdir ${env.SW_PATH} && \
                     tar -xzvf ${env.TEMP_PATH}/${env.PACKAGE_NAME} -C ${env.SW_PATH} \
                     && rm -f ${env.TEMP_PATH}/${env.PACKAGE_NAME}\""
                 
                 echo "Stop Dockers"
-                sh "ssh -l fabien -p 979 petitbilly \"cd ${env.TARGET_PATH} \
+                sh "ssh -l jenkins -p 979 petitbilly \"cd ${env.TARGET_PATH} \
                         && sudo docker-compose stop \""
                 
                 echo "Exchange ${env.SW_PATH}/ and ${env.TARGET_PATH}/ and build Docker"
-                sh "ssh -l fabien -p 979 petitbilly \"cd ${env.TARGET_PATH} \
+                sh "ssh -l jenkins -p 979 petitbilly \"cd ${env.TARGET_PATH} \
                         && rm -rf ${env.TARGET_PATH}/* \
                         && mv ${env.SW_PATH}/* ${env.TARGET_PATH}/ \
                         && cd ${env.SW_PATH} && rm -rf ${env.SW_PATH} \
@@ -73,7 +73,7 @@ pipeline {
                         && sudo docker-compose build \""
                 
                 echo "Restart Dockers"
-                sh "ssh -l fabien -p 979 petitbilly \"cd ${env.TARGET_PATH} \
+                sh "ssh -l jenkins -p 979 petitbilly \"cd ${env.TARGET_PATH} \
                         && sudo docker-compose up -d\""
                 echo "Done."                    
             }
