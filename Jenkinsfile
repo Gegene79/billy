@@ -7,7 +7,7 @@ pipeline {
         TARGET_PATH = "/mnt/sdb/billy"
         TARGET_HOST = "fabien@petitbilly"
         ENV_PATH = "/home/fabien/billy"
-        TEMP_PATH = "/tmp/billy"
+        TEMP_PATH = "/home/jenkins"
         ENV_STORE = "${env.TARGET_HOST}:${env.ENV_PATH}"
         SW_PATH = "${env.TEMP_PATH}/dist_${BUILD_ID}"        
     }
@@ -53,12 +53,12 @@ pipeline {
             steps {
                 
                 echo "Sending package to ${env.TARGET_HOST}"
-                sh "scp -BCp -P 979 ${env.PACKAGE_NAME} ${env.TARGET_HOST}:${env.TARGET_PATH}/"
+                sh "scp -BCp -P 979 ${env.PACKAGE_NAME} ${env.TARGET_HOST}:${env.TEMP_PATH}/"
 
-                echo "Deflate ${env.TARGET_PATH}/${env.PACKAGE_NAME}"
+                echo "Deflate ${env.TEMP_PATH}/${env.PACKAGE_NAME}"
                 sh "ssh -l fabien -p 979 petitbilly \"mkdir ${env.SW_PATH} && \
-                    tar -xzvf ${env.TARGET_PATH}/${env.PACKAGE_NAME} -C ${env.SW_PATH} \
-                    && rm -f ${env.TARGET_PATH}/${env.PACKAGE_NAME}\""
+                    tar -xzvf ${env.TEMP_PATH}/${env.PACKAGE_NAME} -C ${env.SW_PATH} \
+                    && rm -f ${env.TEMP_PATH}/${env.PACKAGE_NAME}\""
                 
                 echo "Stop Dockers"
                 sh "ssh -l fabien -p 979 petitbilly \"cd ${env.TARGET_PATH} \
