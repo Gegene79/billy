@@ -5,7 +5,7 @@ pipeline {
     environment {
         PACKAGE_NAME = "package_${BUILD_ID}.tar.gz"
         TARGET_PATH = "/mnt/sdb/billy"
-        TARGET_HOST = "fabien@petitbilly"
+        TARGET_HOST = "jenkins@petitbilly"
         ENV_PATH = "/home/fabien/billy"
         TEMP_PATH = "/home/jenkins"
         ENV_STORE = "${env.TARGET_HOST}:${env.ENV_PATH}"
@@ -56,16 +56,16 @@ pipeline {
                 sh "scp -BCp -P 979 ${env.PACKAGE_NAME} ${env.TARGET_HOST}:${env.TEMP_PATH}/"
 
                 echo "Deflate ${env.TEMP_PATH}/${env.PACKAGE_NAME}"
-                sh "ssh -l jenkins -p 979 petitbilly \"mkdir ${env.SW_PATH} && \
+                sh "ssh -p 979 ${env.TARGET_HOST} \"mkdir ${env.SW_PATH} && \
                     tar -xzvf ${env.TEMP_PATH}/${env.PACKAGE_NAME} -C ${env.SW_PATH} \
                     && rm -f ${env.TEMP_PATH}/${env.PACKAGE_NAME}\""
                 
                 echo "Stop Dockers"
-                sh "ssh -l jenkins -p 979 petitbilly \"cd ${env.TARGET_PATH} \
+                sh "ssh -p 979 ${env.TARGET_HOST} \"cd ${env.TARGET_PATH} \
                         && sudo docker-compose stop \""
                 
                 echo "Exchange ${env.SW_PATH}/ and ${env.TARGET_PATH}/ and build Docker"
-                sh "ssh -l jenkins -p 979 petitbilly \"cd ${env.TARGET_PATH} \
+                sh "ssh -p 979 ${env.TARGET_HOST} \"cd ${env.TARGET_PATH} \
                         && rm -rf ${env.TARGET_PATH}/* \
                         && mv ${env.SW_PATH}/* ${env.TARGET_PATH}/ \
                         && cd ${env.SW_PATH} && rm -rf ${env.SW_PATH} \
@@ -73,7 +73,7 @@ pipeline {
                         && sudo docker-compose build \""
                 
                 echo "Restart Dockers"
-                sh "ssh -l jenkins -p 979 petitbilly \"cd ${env.TARGET_PATH} \
+                sh "ssh -p 979 ${env.TARGET_HOST} \"cd ${env.TARGET_PATH} \
                         && sudo docker-compose up -d\""
                 echo "Done."                    
             }
