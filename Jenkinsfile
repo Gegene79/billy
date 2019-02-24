@@ -70,6 +70,7 @@ pipeline {
                         && mv ${env.SW_PATH}/* ${env.TARGET_PATH}/ \
                         && cd ${env.SW_PATH} && rm -rf ${env.SW_PATH} \
                         && cd ${env.TARGET_PATH} \
+                        && chown -R jenkins:famille * && chmod -R 755 * \
                         && sudo docker-compose build \""
                 
                 echo "Restart Dockers"
