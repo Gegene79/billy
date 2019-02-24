@@ -1,0 +1,69 @@
+# 
+# Docker compose para crear un front con 2 backend: mongo y un broker MQTT
+#
+
+version: "3.5"
+services:
+  mongo:
+    # -p 27017:27017 --name billy-mongo -v /mnt/sda/data/mongo/:/data/db billy-mongo --auth
+    image: billy-mongo
+    container_name: billy-mongo
+    build: ./mongo/
+    restart: always
+    volumes:
+      - /mnt/sda/data/mongo/:/data/db # in container
+    ports:
+    - "981:27017"
+    networks:
+     - billy-network
+
+  elastic:
+    image: billy-elastic
+    container_name: billy-elastic
+    build: ./elastic
+    restart: always
+    environment:
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - /mnt/sda/data/elastic/:/usr/share/elasticsearch/data
+    ports:
+      - "982:9200"
+      - "983:9300"
+    networks: 
+     - billy-network
+
+  mqtt:
+    # -p 1883:1883 --name billy-mosquitto -v /docker/mosquitto/config/:/mosquitto/conf/ billy-mosquitto
+    image: billy-mqtt
+    container_name: billy-mqtt
+    build: ./mqtt/
+    restart: always
+    volumes:
+      - /docker/mqtt/config/:/mosquitto/conf/
+    ports:
+    - "980:1883"
+    networks:
+     - billy-network
+
+  node:
+    # -u "node" -p 3000:3000 --name billy-node billy-node
+    image: billy-node
+    container_name: billy-node
+    build: ./node/
+    restart: always
+    depends_on:
+      - mongo
+      - mqtt
+      - elastic
+    ports:
+      - "80:3000"
+    networks:
+     - billy-network
+
+networks:
+  billy-network:
+    name: billy-network
