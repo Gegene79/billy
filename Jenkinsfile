@@ -36,12 +36,10 @@ pipeline {
             }
             */
             steps {
-                echo "Packaging ${env.PACKAGE_NAME}"
                 echo "Retrieve production env file"
-                echo "scp -BCp -P 979 ${env.TARGET_HOST}:${env.ENV_PATH}/node_billy_pro.env ./node/src/.env \
-                    && chmod 640 ./node/src/.env \""
                 sh "scp -BCp -P 979 ${env.TARGET_HOST}:${env.ENV_PATH}/node_billy_pro.env ./node/src/.env \
-                    && chmod 640 ./node/src/.env \""
+                    && chmod 640 ./node/src/.env"
+                echo "Package ${env.PACKAGE_NAME}"
                 sh "ls -lah && tar --exclude=node_modules -czvf ${env.PACKAGE_NAME} *"
             }
         }
