@@ -68,7 +68,7 @@ pipeline {
                 sh "ssh -l fabien -p 979 petitbilly \"cd ${env.TARGET_PATH} \
                         && rm -rf ${env.TARGET_PATH}/* \
                         && mv ${env.SW_PATH}/* ${env.TARGET_PATH}/ \
-                        && cd ${env.SW_PATH} && rm -rf ${env.SW_PATH}
+                        && cd ${env.SW_PATH} && rm -rf ${env.SW_PATH} \
                         && cd ${env.TARGET_PATH} \
                         && sudo docker-compose build \""
                 
