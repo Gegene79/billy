@@ -16,7 +16,7 @@ var sampling;
 
 /*** Utility functions ***/
 
-function transform_q(docs){
+function transform_query(docs){
 
     return new Promise(function(resolve,reject){
 
@@ -44,7 +44,7 @@ function transform_q(docs){
     });
 };
 
-function transform_a(docs){
+function transform_agg(docs){
 
     return new Promise(function(resolve,reject){
 
@@ -52,15 +52,17 @@ function transform_a(docs){
         docs.aggregations.nombres.buckets.forEach(function(entry){
             
             entry.cada_30mins.buckets.forEach((val)=>{
-                let datapoint = { x: val.key_as_string, y: Math.round(val.avg_temp.value*10)/10 };
-                
-                let exist_metric = result.find((a)=> {
-                    return (a.key == entry.key);
-                });
-                if (exist_metric)
-                    exist_metric.values.push(datapoint);
-                else 
-                    result.push({key: entry.key, values: [datapoint]});
+                if (val.doc_count >0) {
+                    let datapoint = { x: val.key_as_string, y: Math.round(val.avg_temp.value*10)/10 };
+                    
+                    let exist_metric = result.find((a)=> {
+                        return (a.key == entry.key);
+                    });
+                    if (exist_metric)
+                        exist_metric.values.push(datapoint);
+                    else 
+                        result.push({key: entry.key, values: [datapoint]});
+                }
             });
         });
 
@@ -128,7 +130,7 @@ router.get('/', function(req, res, next) {
                 }
             }
     })
-    .then(transform)
+    .then(transform_query)
     .then((result)=>{sendresult(res,result);})
     .catch(function(error){
         next(error);
@@ -154,7 +156,7 @@ router.get('/current', function(req, res, next) {
             "sort": {"ts": "desc"}
         }
     })
-    .then(transform_q)
+    .then(transform_query)
     .then((result)=>{sendresult(res,result);})
     .catch(function(error){
         next(error);
@@ -200,7 +202,7 @@ router.get('/:type', function(req, res, next) {
        }
 
     })
-    .then(transform_a)
+    .then(transform_agg)
     .then((result)=>{sendresult(res,result);})
     .catch(function(error){
         console.log(JSON.stringify(error));
@@ -227,7 +229,7 @@ router.get('/:type/current', function(req, res, next) {
             "sort": {"ts": "desc"}
         }
     })
-    .then(transform_q)
+    .then(transform_query)
     .then((result)=>{sendresult(res,result);})
     .catch(function(error){
         console.log(JSON.stringify(error));
@@ -270,7 +272,7 @@ router.get('/:type/:name', function(req, res, next) {
        }
    }
 })
-     .then(transform)
+     .then(transform_agg)
     .then(function(result){sendresult(res,result);})
     .catch(function(error){
         next(error);
