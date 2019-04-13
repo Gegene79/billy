@@ -64,6 +64,19 @@ services:
     networks:
      - billy-network
 
+  jupyter:
+    image: billy-jupyter
+    container_name: billy-jupyter
+    build: ./jupyter
+    restart: always
+    read_only: true
+    depends_on:
+     - elastic
+    ports:
+     - 984:8888
+    volumes:
+      - /mnt/sdd/images/:/images/
+
 networks:
   billy-network:
     name: billy-network
