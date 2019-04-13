@@ -75,6 +75,7 @@ services:
      - 984:8888
     volumes:
       - /mnt/sdd/images/:/home/jovyan/images/:ro
+      - /home/fabien/python-data:/home/jovyan/data/
 
 networks:
   billy-network:
