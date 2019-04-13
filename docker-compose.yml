@@ -69,7 +69,6 @@ services:
     container_name: billy-jupyter
     build: ./jupyter
     restart: always
-    read_only: true
     depends_on:
      - elastic
     ports:
