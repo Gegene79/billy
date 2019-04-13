@@ -75,7 +75,7 @@ services:
     ports:
      - 984:8888
     volumes:
-      - /mnt/sdd/images/:/images/
+      - /mnt/sdd/images/:/home/jovyan/images/
 
 networks:
   billy-network:
