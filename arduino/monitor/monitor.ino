@@ -23,6 +23,11 @@ NTPClient timeClient(ntpUDP);
 const char* SSID = "";     //  your network SSID (name)
 const char* PASS = "";  // your network password
 const char* NAME = "EXTERIOR";  // EMMA_PIERRE, SALON, HABITACION, EXTERIOR
+IPAddress local_IP(192, 168, 1, 100);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 0, 0);
+IPAddress primaryDNS(8, 8, 8, 8); //optional
+IPAddress secondaryDNS(8, 8, 4, 4); //optional
 const char* MQ_SERVER = "192.168.1.2";
 const int   MQ_PORT = 980;
 const char* MQ_USER = "";
@@ -156,7 +161,8 @@ const uint8_t RETRY = 2;
   }
 
   float readBatteryVoltage(){
-    float value = (150.0f/100.0f) * 3.30f * float(analogRead(ADC_PIN)) / 4096.0f;
+    //float value = (150.0f/100.0f) * 3.30f * float(analogRead(ADC_PIN)) / 4096.0f;
+    float value = (9.1f/2.0f) * 3.30f * float(analogRead(ADC_PIN)) / 4096.0f;
     Serial.print("Battery voltage: ");Serial.print(value);Serial.println(" V");
     return value;
   }
@@ -296,6 +302,12 @@ const uint8_t RETRY = 2;
   boolean setup_wifi() {
     
     int retries = 0;
+
+    // Necesario para conectarse con IP estatica
+    if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS)) {
+      Serial.println("STA Failed to configure");
+    }
+    
     Serial.print("Connecting to "); Serial.println(String(SSID));
     WiFi.begin(SSID, PASS);
     
