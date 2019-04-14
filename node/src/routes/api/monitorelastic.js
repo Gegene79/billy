@@ -193,9 +193,10 @@ router.get('/:type', function(req, res, next) {
                            ,
                            "aggs": {
                                "avg_temp": { "avg" : { "field" : "value" } }
-                               
                            }
-                       }
+                       },
+                        "max_temp": { "max" : { "field" : "value" } },
+                        "min_temp": { "min" : { "field" : "value" } }
                    }
                }
            }
