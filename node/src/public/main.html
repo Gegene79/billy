@@ -16,8 +16,7 @@
         <!-- nvd3 css -->
         <link rel="stylesheet"  href="./css/nv.d3.min.css" type="text/css">
          <!-- Google fonts -->
-         <link href="https://fonts.googleapis.com/css?family=Open+Sans:300" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css?family=Dancing+Script" rel="stylesheet">
+         <link href="https://fonts.googleapis.com/css?family=Open+Sans:300|Roboto:300|Ubuntu:300" rel="stylesheet">
         <!-- blueimp -->
         <link rel="stylesheet" href="./css/blueimp-gallery.min.css">
         <!-- Custom styles for this page -->
@@ -126,6 +125,11 @@
                     <div class='temperature-title'>Salón</div>
                     <div class='temperature-number' id='temp-SALON'>-</div>
                     <div class='temperature-unit'>ºC</div>
+                    <div class='temperature-minmax'>
+                        <div id='temp-max-SALON'><div class='fas fa-caret-up' ></div>23.5ºC</div>
+                        <div id='temp-avg-SALON'>+1.8ºC</div>
+                        <div id='temp-min-SALON'><div class='fas fa-caret-down' ></div>20.3ºC</div>
+                    </div>
                     <div class='temperature-date' id='temp-ts-SALON'>-</div>
                     </div>
                 </div>
@@ -157,12 +161,33 @@
                 </div-->
             </div>
             <div id="ligne2" class="row">
-                <div class="col-md-12">
-                <div id="chart_week" class='main-content with-3d-shadow with-transitions '>
-                    <svg></svg>
-                </div>
-                </div>     
+                    <div class="col-md-4 offset-md-8">
+                            <button id="prev-week-btn" class="btn btn-outline-secondary btn-sm rounded-left" type="button">
+                                <i class="fa fa-angle-double-left"></i>
+                            </button>
+                            <button id="prev-week-btn" class="btn btn-outline-secondary btn-sm rounded-left" type="button">
+                                <i class="fa fa-angle-left"></i>
+                            </button>
+                            <label>Sunday 31 March</label>
+                            <button id="next-week-btn" class="btn btn-outline-secondary btn-sm rounded-right" type="button">
+                                <i class="fa fa-angle-right"></i>
+                            </button>
+                            <button id="next-week-btn" class="btn btn-outline-secondary btn-sm rounded-right" type="button">
+                                <i class="fa fa-angle-double-right"></i>
+                            </button>
+                            
+                    </div>
             </div>
+            <div id="ligne3" class="row">
+
+                
+
+                <div class="col-md-12">
+                    <div id="chart_week" class='main-content with-3d-shadow with-transitions '>
+                        <svg></svg>
+                    </div>
+                    
+                </div>
 
         </div><!-- /.container -->
 

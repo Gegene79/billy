@@ -38,7 +38,7 @@ text {
     width: 100%;
 }
 #title{
-    font-family: 'Dancing Script', cursive;
+    font-family: 'Ubuntu', sans-serif;
     font-size: 2em;
 }
 
@@ -68,6 +68,17 @@ text {
     line-height: 100%;
     font-family: 'Open Sans', sans-serif;
     font-size: 1em;
+}
+
+.temperature-minmax{
+    display: table-cell;
+    padding-left: 1em;
+    text-align: right;
+    vertical-align: top;
+    line-height: 100%;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 1em;
+    color: #aaa;
 }
 
 .temperature-date{
