@@ -10,7 +10,7 @@ import ujson
 gc.collect()
 from globals import Const
 from sensor_mqtt import Mqtt
-SLEEP_TIME = 10  # 60 seconds
+SLEEP_TIME = 60  # 60 seconds
 
 
 def main():

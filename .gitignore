@@ -36,6 +36,10 @@ build/Release
 node_modules/
 jspm_packages/
 
+# python pycharm directories
+.idea/
+venv/
+
 # TypeScript v1 declaration files
 typings/
 

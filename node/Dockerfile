@@ -1,4 +1,4 @@
-FROM node:8.12-slim
+FROM node:8-slim
 RUN mkdir /app
 WORKDIR /app
 RUN ls -lah

@@ -1,5 +1,5 @@
-FROM jupyter/tensorflow-notebook:4cdbc9cdb7d1
-RUN pwd
+FROM jupyter/tensorflow-notebook
 RUN mkdir images && mkdir data
-RUN pip install elasticsearch oauth2client httplib2 google-auth 
+RUN jupyter notebook --generate-config
+RUN pip install elasticsearch oauth2client httplib2 google-auth pillow
 CMD start.sh jupyter lab
