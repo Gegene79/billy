@@ -1,11 +1,9 @@
 'use strict';
-const mongoose = require('mongoose');
 const router = require('express').Router();
 const auth = require('../../config/auth');
 const e = require('../../config/error');
-const Users = mongoose.model('users');
 const debug = require('debug');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 //POST new user route (optional, everyone has access)
 router.post('/signup', auth.optional, (req, res, next) => {

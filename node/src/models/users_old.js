@@ -1,13 +1,22 @@
-"use strict"
+const mongoose = require('mongoose');
 const debug = require('debug');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const jwt = require('jsonwebtoken');
 var { DateTime } = require('luxon');
-var el = require('../config/db')
+
+const { Schema } = mongoose;
+
+const UsersSchema = new Schema({
+  _id: String,
+  email: String,
+  nick: String,
+  password: String
+});
 
 //hashing a password before saving it to the database
-exports.passhash = (next) => {
+UsersSchema.pre('save', function (next) {
+  var user = this;
   bcrypt.hash(user.password, saltRounds, function(err, hash) {
     if (err) {
       return next(err);
@@ -15,9 +24,9 @@ exports.passhash = (next) => {
     user.password = hash;
     next();
   })
-};
+});
 
-generateJWT = function(user) {
+UsersSchema.methods.generateJWT = function() {
   //const today = DateTime.local();
   //var expirationDate = new Date(today.plus({minutes:1}).toJSDate());
   var expirationDate = DateTime.local().plus({minutes:1}).toJSDate();
@@ -27,33 +36,10 @@ generateJWT = function(user) {
     issuer: "petitbilly",
     expiry: parseInt(expirationDate.getTime() / 1000, 10),
     audience: "everyone",
-    email: user.email,
-    nick: user.nick,
+    email: this.email,
+    nick: this.nick,
     profile: "admin"
   }, process.env.SECRET);
 };
 
-exports.findUser = (email) => {
-
-  el_client.search({
-    index: 'users',
-    type: '_doc',
-    body: 
-    {
-      "query": {
-          "match": {
-              "email": email
-          }
-      }
-    }
-  })
-  .then((result)=>{
-    result.hits.hits.forEach(function(entry){
-  })
-})
-.catch(function(error){
-    next(error);
-});
-
-
-};
+mongoose.model('users', UsersSchema);

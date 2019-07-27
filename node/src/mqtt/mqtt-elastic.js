@@ -2,15 +2,13 @@
 const debug = require('debug');
 const mqtt = require('mqtt');
 const e = require('../config/error');
+var el = require('../config/db');
 var mbuffer = new Map();
 const MAXDEV = new Map([["temperature", 5 / 60000],      // temperature => 5ºC per minute
                         ["humidity",    10 / 60000],     // humidity => 10% per minute
                         ["prueba_type", 10 / 60000]]);   // for testing purpose   
-const elastic = require('elasticsearch');
-const el_client = new elastic.Client({
-    host: process.env.EL_HOST,
-    log: 'trace'
-});
+
+
 // opciones de connexiones. "clean"=false evita que se borren los mensajes persistentes
 // al momento de conectarse.
 const mq_client_opts = {
@@ -42,7 +40,14 @@ mq_client.on('message', (topic, message) => {
     // process message
     switch(topic_s){
         case process.env.MQ_TOPIC: 
-            return processMetricMsg(topic,message);
+            // new object
+            try{
+                var metric = JSON.parse(message.toString());
+                metric.value = Number(metric.value);
+                return processMetricMsg(metric);
+            } catch (err){
+                console.log("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
+            }
             break;
         case process.env.MQ_SENSOR_TOPIC:
             return processStatusMsg(topic,message);
@@ -53,18 +58,10 @@ mq_client.on('message', (topic, message) => {
 });
 
 
-function processMetricMsg(topic,message){
+function processMetric(metric){
 
-    // new object
-    try{
-        var metric = JSON.parse(message.toString());
-    } catch (err){
-        console.log("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
-    }
-
-    metric.value = Number(metric.value);
+    // complete metric info
     metric.receivedAt = new Date();
-    metric.topic = topic;
     if (!(metric.period)) metric.period = 'm';
     if (!(metric.ts)) metric.ts = new Date();
         else metric.ts = new Date(metric.ts*1000);
@@ -113,3 +110,5 @@ function processStatusMsg(topic, message){
         console.log("Imposible insertar el status: "+JSON.stringify(status)+"\n"+err.toString());
     });
 };
+
+exports.processMetric = processMetric

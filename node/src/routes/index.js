@@ -4,11 +4,11 @@ const auth = require('../config/auth');
 
 
 // redirige a las apis
-router.use('/api', require('./api'));
+router.use('/api', require('./api/index.js'));
 
-/* GET home page. 
+// GET home page. 
 router.get('/', auth.required, function(req, res, next) {
   return res.redirect('/main.html');
 });
-*/
+
 module.exports = router;

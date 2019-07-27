@@ -4,19 +4,6 @@
 
 version: "3.5"
 services:
-  mongo:
-    # -p 27017:27017 --name billy-mongo -v /mnt/sda/data/mongo/:/data/db billy-mongo --auth
-    image: billy-mongo
-    container_name: billy-mongo
-    build: ./mongo/
-    restart: always
-    volumes:
-      - /mnt/sda/data/mongo/:/data/db # in container
-    ports:
-    - "981:27017"
-    networks:
-     - billy-network
-
   elastic:
     image: billy-elastic
     container_name: billy-elastic

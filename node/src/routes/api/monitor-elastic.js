@@ -2,12 +2,7 @@
 var express = require('express');
 var router = express.Router();
 var { DateTime } = require('luxon');
-const elastic = require('elasticsearch');
-const el_client = new elastic.Client({
-    host: process.env.EL_HOST,
-    log: 'trace'
-});
-
+var el = require ('../../config/db');
 var ini = DateTime.local();
 var end = DateTime.local();
 const min =  60*1000;
@@ -70,11 +65,6 @@ function transform_agg(docs){
     });
 };
 
-function sendresult(res,result){
-    res.contentType('application/json');
-    res.status(200).json(result);
-};
-
 /*** Defaults parameters ***/
 
 router.use(function (req, res, next) {
@@ -101,9 +91,9 @@ router.use(function (req, res, next) {
 
 
 // get historical values for all metrics
-router.get('/', function(req, res, next) {
-    
-    el_client.search({
+router.get('/', function(req, res, next) { // in fact /api
+
+    el.client.search({
         index: 'metrics',
         type: '_doc',
         body: {
@@ -131,16 +121,14 @@ router.get('/', function(req, res, next) {
             }
     })
     .then(transform_query)
-    .then((result)=>{sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });
+    .then((result)=>{ res.locals.result = result; next();})
+    .catch((error) => next(error));
 });
 
 // get current values for all metrics
 router.get('/current', function(req, res, next) {
     
-    el_client.search({
+    el.client.search({
         index: 'metrics',
         type: '_doc',
         body: 
@@ -157,17 +145,14 @@ router.get('/current', function(req, res, next) {
         }
     })
     .then(transform_query)
-    .then((result)=>{sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });
+    .then((result)=>{ res.locals.result = result; next();})
+    .catch((error) => next(error));
 });
-
 
 // get historical values for all metrics of some type
 router.get('/:type', function(req, res, next) {
     
-    el_client.search({
+    el.client.search({
         index: 'metrics',
         type: '_doc',
         body: 
@@ -204,17 +189,14 @@ router.get('/:type', function(req, res, next) {
 
     })
     .then(transform_agg)
-    .then((result)=>{sendresult(res,result);})
-    .catch(function(error){
-        console.log(JSON.stringify(error));
-        next(error);
-    });  
+    .then((result)=>{ res.locals.result = result; next();})
+    .catch((error) => next(error));  
 });
 
 // get current values of all metrics of some type
 router.get('/:type/current', function(req, res, next) {
 
-    el_client.search({
+    el.client.search({
         index: 'metrics',
         type: '_doc',
         body: 
@@ -231,16 +213,13 @@ router.get('/:type/current', function(req, res, next) {
         }
     })
     .then(transform_query)
-    .then((result)=>{sendresult(res,result);})
-    .catch(function(error){
-        console.log(JSON.stringify(error));
-        next(error);
-    });
+    .then((result)=>{ res.locals.result = result; next();})
+    .catch((error) => next(error));
 });
 
 // get historical values for a type and a name
 router.get('/:type/:name', function(req, res, next) {
-    el_client.search({
+    el.client.search({
         index: 'metrics',
         type: '_doc',
         body:
@@ -274,22 +253,32 @@ router.get('/:type/:name', function(req, res, next) {
    }
 })
      .then(transform_agg)
-    .then(function(result){sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });  
+     .then((result)=>{ res.locals.result = result; next();})
+     .catch((error) => next(error));  
 });
 
 // get current value for a type and a name
 router.get('/:type/:name/current', function(req, res, next) {
-
-    db.getCurrentValueByTypeAndName(req.params.type,req.params.name,ini)
-    .then(function(result){
-        sendresult(res,result);
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: 
+        {
+            "query": {
+                "match": {
+                    "type": req.params.type
+                }
+            },
+            "collapse" : {
+                "field" : "name.keyword" 
+            },
+            "sort": {"ts": "desc"}
+        }
     })
-    .catch(function(error){
-        next(error);
-    });
+    .then(transform_query)
+    .then((result)=>{ res.locals.result = result; next();})
+    .catch((error) => next(error));
+    
 });
 
 // insert metric
@@ -300,32 +289,8 @@ router.post('/:type/:name', function(req,res,next){
     metric.name = req.params.name;
     metric.type = req.params.type;
 
-    var key = metric.type+"."+metric.name;
     
-    if (!(metric.period)) {
-        metric.period = 'm';
-    }
-    if (!(metric.timestamp)){
-        metric.timestamp = new Date();
-    }
     
-    if (mbuffer.has(key)) {
-        let valuediff = Math.abs(metric.value - mbuffer.get(key).value);
-        let timediff = Math.abs(metric.timestamp.getTime() - mbuffer.get(key).timestamp.getTime());
-        let limit = MAXDEV.get(metric.type);
-
-        if ( (valuediff / timediff) > MAXDEV.get(metric.type) ){ 
-            // too much metric change for elapsed time... do not insert data.
-            return next(new Error("Erroneous value, difference of "+valuediff.toFixed(1)+" units in "+(timediff/1000).toFixed(0)+"seconds."));           
-        }
-    }
-    mbuffer.set(key,metric); // add or replace in Map.
-
-    db.insertMetric(metric)
-    .then(function(result){sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });
 });
 
 module.exports = router;

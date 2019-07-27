@@ -1,6 +1,4 @@
 const jwt = require('express-jwt');
-const mongoose = require('mongoose');
-const users = mongoose.model('users');
 const expiration = 1000 * 60 * 60 * 24 * 31;
 
 const getTokenFromHeaders = (req) => {
