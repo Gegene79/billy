@@ -80,7 +80,7 @@ function processMetric(metric){
     }
     mbuffer.set(key,metric); // add or replace in Map.
 
-    el_client.index({
+    el.client.index({
         index: process.env.EL_METRIC_INDEX,
         type: '_doc', // hard coded
         body: metric
@@ -101,7 +101,7 @@ function processStatusMsg(topic, message){
     status.receivedAt = new Date();
     status.topic = topic;
     
-    el_client.index({
+    el.client.index({
         index: process.env.EL_SENSOR_INDEX,
         type: '_doc', // hard coded
         body: status
