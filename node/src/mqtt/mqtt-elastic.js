@@ -25,11 +25,11 @@ mq_client.on('connect', () => {
     debug("connected to "+process.env.MQ_URL);
     mq_client.subscribe(process.env.MQ_TOPIC+'/#', pubsub_opts, function (err) {
         if (err) console.log(err.toString())
-        else debug("suscribed to "+process.env.MQ_TOPIC);
+        else console.log("suscribed to "+process.env.MQ_TOPIC);
     });
     mq_client.subscribe(process.env.MQ_SENSOR_TOPIC+'/#', pubsub_opts, function (err) {
         if (err) console.log(err.toString());
-        else debug("suscribed to "+process.env.MQ_TOPIC);
+        else console.log("suscribed to "+process.env.MQ_TOPIC);
     });
 });
 
@@ -46,14 +46,14 @@ mq_client.on('message', (topic, message) => {
                 metric.value = Number(metric.value);
                 return processMetric(metric);
             } catch (err){
-                console.log("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
+                console.error("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
             }
             break;
         case process.env.MQ_SENSOR_TOPIC:
             return processStatusMsg(topic,message);
             break;
         default:
-            console.log("Topic no valido: "+topic+", msg: "+message.toString()+ "\n"+err.toString());
+            console.error("Topic no valido: "+topic+", msg: "+message.toString()+ "\n"+err.toString());
     }
 });
 

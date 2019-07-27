@@ -1,10 +1,5 @@
 "use strict"
+const { Client } = require('@elastic/elasticsearch')
 
-const elastic = require('elasticsearch');
-
-const client = new elastic.Client({
-    host: process.env.EL_HOST,
-    log: 'trace'
-});
-
-exports.client = client;
+// connect to elastic and export client
+exports.client = new Client({ node: process.env.EL_HOST })
