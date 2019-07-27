@@ -1,3 +1,5 @@
 cluster.name: billy-cluster
 node.name: billy-elastic1
 network.host: _eth0_
+cluster.initial_master_nodes: 
+   - billy-elastic1
