@@ -62,7 +62,7 @@ pipeline {
                 
                 echo "Stop Dockers"
                 sh "ssh -p 979 ${env.TARGET_HOST} \"cd ${env.TARGET_PATH} \
-                        && sudo docker-compose stop \""
+                        && sudo docker-compose down \""
                 
                 echo "Exchange ${env.SW_PATH}/ and ${env.TARGET_PATH}/ and build Docker"
                 sh "ssh -p 979 ${env.TARGET_HOST} \"cd ${env.TARGET_PATH} \

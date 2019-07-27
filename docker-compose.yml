@@ -43,7 +43,6 @@ services:
     build: ./node/
     restart: always
     depends_on:
-      - mongo
       - mqtt
       - elastic
     ports:

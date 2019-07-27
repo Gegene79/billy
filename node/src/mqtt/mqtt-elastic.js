@@ -44,7 +44,7 @@ mq_client.on('message', (topic, message) => {
             try{
                 var metric = JSON.parse(message.toString());
                 metric.value = Number(metric.value);
-                return processMetricMsg(metric);
+                return processMetric(metric);
             } catch (err){
                 console.log("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
             }
