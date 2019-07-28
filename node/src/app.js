@@ -32,7 +32,6 @@ if(!isProduction) {
 // declare routes
 app.use(require('./routes'));
 app.use(express.static('public'));
-app.use('/js',express.static((__dirname + '/js')));
 require('./mqtt/mqtt-elastic');
 
 //Error handlers & middlewares

@@ -1,5 +1,6 @@
+'use strict'
 const jwt = require('express-jwt');
-const expiration = 1000 * 60 * 60 * 24 * 31;
+var { DateTime } = require('luxon');
 
 const getTokenFromHeaders = (req) => {
   const { headers: { authorization } } = req;
@@ -32,9 +33,20 @@ exports.optional =
     credentialsRequired: false
     });
 
+exports.generateJWT = function(user) {
+  //const today = DateTime.local();
+  //var expirationDate = new Date(today.plus({minutes:1}).toJSDate());
+  var expirationDate = DateTime.local().plus({minutes:1}).toJSDate();
 
-exports.generateToken = (user) => { 
-  return user.generateJWT();
+  return jwt.sign( {
+    subject: "petitbilly",
+    issuer: "petitbilly",
+    expiry: parseInt(expirationDate.getTime() / 1000, 10),
+    audience: "everyone",
+    email: user.email,
+    name: user.name,
+    profile: "admin"
+  }, process.env.SECRET);
 };
 
 

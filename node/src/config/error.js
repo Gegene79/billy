@@ -16,7 +16,7 @@ class BillyError extends Error {
     }
 };
 
-class EmailTakenError extends BillyError {
+class UserAlreadyExistsError extends BillyError {
     constructor (message) {
       super(message || 'El E-Mail entrado ya está siendo utilizado', 400);
     }
@@ -49,4 +49,4 @@ class CredentialsError extends BillyError {
     }
 };
 
-module.exports = {EmailTakenError,DatabaseError,InfoRequiredError,UnauthorizedError,CredentialsError};
+module.exports = {UserAlreadyExistsError,DatabaseError,InfoRequiredError,UnauthorizedError,CredentialsError};
