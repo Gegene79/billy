@@ -67,3 +67,6 @@ env.json
 
 # vscode
 .vscode
+
+# local backups
+*_old

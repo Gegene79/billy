@@ -34,10 +34,9 @@ exports.optional =
     });
 
 exports.generateJWT = function(user) {
-  //const today = DateTime.local();
-  //var expirationDate = new Date(today.plus({minutes:1}).toJSDate());
+  
   var expirationDate = DateTime.local().plus({minutes:1}).toJSDate();
-
+  
   return jwt.sign( {
     subject: "petitbilly",
     issuer: "petitbilly",

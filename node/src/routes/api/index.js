@@ -1,10 +1,9 @@
-'use strict';
+'use strict'
 const express = require('express');
 const router = express.Router();
 
 router.use('/users', require('./users'));
-router.use('/monitor', require('./monitor-elastic'));
-
+router.use('/monitor', require('./monitor'));
 
 // after all other middlewares, send results.
 router.use(function (req, res, next) {
@@ -15,7 +14,7 @@ router.use(function (req, res, next) {
 // catch API errors, send 500 status and error JSON
 router.use((err, req, res, next) => {
     // default to 500 server error
-    return res.status(500).json({ message: err.message });
+    return res.status(500).json({status: 500, error: {message: err.message}});
 });
 
 module.exports = router;

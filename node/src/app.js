@@ -1,66 +1,39 @@
 'use strict';
-const express = require('express');
-const path = require('path');
-const env = require('dotenv').config();
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const errorHandler = require('errorhandler');
-const cors = require('cors');
-const flash = require('connect-flash');
+// express por defecto
+var express = require('express');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var logger = require('morgan');
+// dependencias añadidas
 const e = require('./config/error');
-const debug = require('debug');
+const cors = require('cors');
+const env = require('dotenv').config();
 //Configure isProduction variable
 const isProduction = (process.env.NODE_ENV === 'production');
 
-// initiate app
-const app = express();
+// express rutas por defecto
+var indexRouter = require('./routes/index');
+var apiRouter = require('./routes/api/index');
 
-//Configure our app
-app.use(logger('dev'));
+
+// declaración por defecto de app Express
+var app = express();
+
+// express por defecto
+app.use(logger(process.env.NODE_ENV)); // en express: 'dev'
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// descodifica las cookies con el string de secreto
-app.use(cookieParser(process.env.SECRET));
-app.use(flash());
+app.use(cookieParser(process.env.SECRET)); // modificado para descodificar las signed-cookies
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors());
+app.use(cors()); // añadimos CORS
 
-if(!isProduction) {
-  app.use(errorHandler());
-}
+// rutas por defecto Express
+app.use('/', indexRouter);
+// redirige hacia las apis
+app.use('/api', apiRouter);
 
-// declare routes
-app.use(require('./routes'));
-app.use(express.static('public'));
+// load mqtt - elastic bridge
 require('./mqtt/mqtt-elastic');
 
-//Error handlers & middlewares
-app.use((err, req, res, next) => {
-  
-  debug(err.constructor.name);
-
-  if (err instanceof e.UnauthorizedError) {
-    // jwt authentication error
-    req.flash('warning', err.message);
-    return res.redirect('/login.html');
-  }
-  next(err);
-});
-
-app.use((err, req, res, next) => {
-  
-  if (err instanceof e.CredentialsError) {
-    // jwt authentication error
-    req.flash('critical', err.message);
-    return res.redirect('/login.html');
-  }
-  next(err);
-});
-
-app.use((err, req, res, next) => {
-  
-  // default to 500 server error
-  return res.status(500).json({ message: err.message });
-});
-
+// modulo Express por defecto
 module.exports = app;
