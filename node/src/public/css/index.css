@@ -68,10 +68,8 @@ body {
  * Header
  */
 .masthead-brand {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  font-family: 'Dancing Script', cursive;
-  font-size: 3em;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 3em;
 }
 
 .masthead-nav > li {

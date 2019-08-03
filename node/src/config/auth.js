@@ -1,6 +1,10 @@
 'use strict'
 const jwt = require('express-jwt');
+const JWT = require('jsonwebtoken');
+const debug = require('debug')('auth');
 var { DateTime } = require('luxon');
+
+
 
 const getTokenFromHeaders = (req) => {
   const { headers: { authorization } } = req;
@@ -12,7 +16,7 @@ const getTokenFromHeaders = (req) => {
 };
 
 const getTokenFromCookie = (req) => {
-  const { token } = req.cookies;
+  var token = req.cookies.jwt;
 
   if (token) {
     return token;
@@ -35,12 +39,13 @@ exports.optional =
 
 exports.generateJWT = function(user) {
   
-  var expirationDate = DateTime.local().plus({minutes:1}).toJSDate();
+  var expirationDate = DateTime.local().plus({month:1}).toJSDate();
   
-  return jwt.sign( {
+  return JWT.sign( {
     subject: "petitbilly",
     issuer: "petitbilly",
     expiry: parseInt(expirationDate.getTime() / 1000, 10),
+    exp: parseInt(expirationDate.getTime() / 1000, 10),
     audience: "everyone",
     email: user.email,
     name: user.name,

@@ -8,7 +8,7 @@ const el = require('../../config/db');
 const saltRounds = 10;
 
 //POST new user route (optional, everyone has access)
-router.post('/signup', auth.optional, async (req, res, next) => {
+router.post('/signup', async (req, res, next) => {
   try{
     const { body: { user } } = req;
     console.log('Signing up new user ' + JSON.stringify(user));
@@ -38,5 +38,41 @@ router.post('/signup', auth.optional, async (req, res, next) => {
     
   } catch (err) {next(err)}
 })
+
+//POST login route (optional, everyone has access)
+router.post('/login', async (req, res, next) => {
+  try{
+    
+    if(!req.body.email) throw new e.InfoRequiredError("Email necesario.");
+    if(!req.body.password) throw new e.InfoRequiredError("Contraseña necesaria.");
+
+    var user = {}
+    user.email = req.body.email;
+    user.password = req.body.password;
+
+    // busca el usuario en el index
+    let resp = await el.client.search({
+      index: process.env.EL_USER_INDEX,
+      type: el.DOC_TYPE,
+      body: {"query": { "ids" : { "values" : user.email } }}
+    });
+    debug('Response: %O',resp);
+    let total = resp.body.hits.total.value;
+    if (total != 1) 
+      throw new e.CredentialsError("Usuario no encontrado.");
+
+    // compara la contraseña
+    let usuario = {}
+    usuario = resp.body.hits.hits[0]._source;
+    let ok = await bcrypt.compare(user.password, usuario.password);
+    
+    if (ok) return res.cookie('jwt', auth.generateJWT(usuario))
+            .status(200)
+            .redirect('/main.html'); 
+    else throw new e.CredentialsError("Credenciales no validas.");
+  }
+  catch(err) {
+    next(err)}
+});
 
 module.exports = router;
