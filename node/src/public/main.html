@@ -46,7 +46,6 @@
         <script src="./js/monitor.js"></script>
         <script src="./js/gallery.js"></script>
         <script src="./js/main.js"></script>
-
         <script src='./js/auth.js'></script>
 
     </head>
@@ -96,8 +95,13 @@
                     <div id="IndicatorContainer">
                         <div>
                                 <div class='temperature-title'>Exterior</div>
-                                <div class='temperature-number' id='temp-EXTERIOR'>-</div>
+                                <div class='temperature-number' id='temp-EXTERIOR'>--</div>
                                 <div class='temperature-unit'>ºC</div>
+                                <div class='temperature-minmax'>
+                                    <div id='temp-max-EXTERIOR'><div class='fas fa-caret-up'></div><span>--</span></div>
+                                    <div id='temp-avg-EXTERIOR'>--</div>
+                                    <div id='temp-min-EXTERIOR'><div class='fas fa-caret-down'></div><span>--</span></div>
+                                </div>
                                 <div class='temperature-date' id='temp-ts-EXTERIOR'>-</div>
                         </div>
                         <div id="ExteriorIndicator"></div>
@@ -106,29 +110,25 @@
                 <div class='col-md-2'>
                     <div>
                         <div class='temperature-title'>Niños</div>
-                        <div class='temperature-number' id='temp-EMMA_PIERRE'>-</div>
+                        <div class='temperature-number' id='temp-EMMA_PIERRE'>--</div>
                         <div class='temperature-unit'>ºC</div>
+                        <div class='temperature-minmax'>
+                            <div id='temp-max-EMMA_PIERRE'><div class='fas fa-caret-up'></div><span>--</span></div>
+                            <div id='temp-avg-EMMA_PIERRE'>--</div>
+                            <div id='temp-min-EMMA_PIERRE'><div class='fas fa-caret-down'></div><span>--</span></div>
+                        </div>
                         <div class='temperature-date' id='temp-ts-EMMA_PIERRE'>-</div>
                     </div>
                 </div>
-                <!-- div class='col-md-2'>
-                        <div>
-                    <div class='temperature-title'>Pierre</div>
-                    <div class='temperature-number' id='temp-Pierre'>-</div>
-                    <div class='temperature-unit'>ºC</div>
-                    <div class='temperature-date' id='temp-ts-Pierre'>-</div>
-                    </div>
-                </div -->
-                
                 <div class='col-md-2'>
                         <div>
                     <div class='temperature-title'>Salón</div>
-                    <div class='temperature-number' id='temp-SALON'>-</div>
+                    <div class='temperature-number' id='temp-SALON'>--</div>
                     <div class='temperature-unit'>ºC</div>
                     <div class='temperature-minmax'>
-                        <div id='temp-max-SALON'><div class='fas fa-caret-up' ></div>23.5ºC</div>
-                        <div id='temp-avg-SALON'>+1.8ºC</div>
-                        <div id='temp-min-SALON'><div class='fas fa-caret-down' ></div>20.3ºC</div>
+                        <div id='temp-max-SALON'><div class='fas fa-caret-up'></div><span>--</span></div>
+                        <div id='temp-avg-SALON'>--</div>
+                        <div id='temp-min-SALON'><div class='fas fa-caret-down'></div><span>--</span></div>
                     </div>
                     <div class='temperature-date' id='temp-ts-SALON'>-</div>
                     </div>
@@ -136,43 +136,43 @@
                 <div class='col-md-2'>
                         <div>
                     <div class='temperature-title'>Cocina</div>
-                    <div class='temperature-number' id='temp-COCINA'>-</div>
+                    <div class='temperature-number' id='temp-COCINA'>--</div>
                     <div class='temperature-unit'>ºC</div>
+                    <div class='temperature-minmax'>
+                        <div id='temp-max-COCINA'><div class='fas fa-caret-up'></div><span>--</span></div>
+                        <div id='temp-avg-COCINA'>--</div>
+                        <div id='temp-min-COCINA'><div class='fas fa-caret-down'></div><span>--</span></div>
+                    </div>
                     <div class='temperature-date' id='temp-ts-COCINA'>-</div>
                     </div>
                 </div>
                 <div class='col-md-2'>
                     <div>
                         <div class='temperature-title'>Habitación</div>
-                        <div class='temperature-number' id='temp-HABITACION'>-</div>
+                        <div class='temperature-number' id='temp-HABITACION'>--</div>
                         <div class='temperature-unit'>ºC</div>
+                        <div class='temperature-minmax'>
+                            <div id='temp-max-HABITACION'><div class='fas fa-caret-up'></div><span>--</span></div>
+                            <div id='temp-avg-HABITACION'>--</div>
+                            <div id='temp-min-HABITACION'><div class='fas fa-caret-down'></div><span>--</span></div>
+                        </div>
                         <div class='temperature-date' id='temp-ts-HABITACION'>-</div>
                     </div>
                 </div>
-                <!--div class="col-md-8">
-                    <div id="ligne1col1" class="row">
-                    </div>    
-                </div>
-
-                <div class="col-md-4">
-                    <div id="chart_6hours" class='main-content with-3d-shadow with-transitions '>
-                        <svg></svg>
-                    </div>
-                </div-->
             </div>
             <div id="ligne2" class="row">
                     <div class="col-md-4 offset-md-8">
-                            <button id="prev-week-btn" class="btn btn-outline-secondary btn-sm rounded-left" type="button">
+                            <button id="first-week-btn" class="btn btn-outline-secondary btn-sm rounded-left" type="button">
                                 <i class="fa fa-angle-double-left"></i>
                             </button>
                             <button id="prev-week-btn" class="btn btn-outline-secondary btn-sm rounded-left" type="button">
                                 <i class="fa fa-angle-left"></i>
                             </button>
-                            <label>Sunday 31 March</label>
+                            <label id="referenceDate">Sunday 31 March</label>
                             <button id="next-week-btn" class="btn btn-outline-secondary btn-sm rounded-right" type="button">
                                 <i class="fa fa-angle-right"></i>
                             </button>
-                            <button id="next-week-btn" class="btn btn-outline-secondary btn-sm rounded-right" type="button">
+                            <button id="last-week-btn" class="btn btn-outline-secondary btn-sm rounded-right" type="button">
                                 <i class="fa fa-angle-double-right"></i>
                             </button>
                             

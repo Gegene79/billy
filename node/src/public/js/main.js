@@ -48,6 +48,35 @@ $(function() {
         frameNum: 600
     });
 
+    // monitor event handlers
+    $( '#prev-week-btn' ).on('click',function(){
+        event.preventDefault();
+        chartRefDate = chartRefDate.minus({ week: 1})
+        updateWeekChart(chartRefDate);
+    });
+
+    $( '#first-week-btn' ).on('click',function(){
+        event.preventDefault();
+        chartRefDate = chartRefDate.minus({ month: 1})
+        updateWeekChart(chartRefDate);
+    });
+
+    $( '#next-week-btn' ).on('click',function(){
+        event.preventDefault();
+        if (chartRefDate.plus({ week: 1}).toSeconds() > DateTime.local().toSeconds()) {
+            chartRefDate = DateTime.local().setLocale('ES').startOf('day');
+        } else chartRefDate = chartRefDate.plus({ week: 1})
+        updateWeekChart(chartRefDate);
+    });
+
+    $( '#last-week-btn' ).on('click',function(){
+        event.preventDefault();
+        if (chartRefDate.plus({ month: 1}).toSeconds() > DateTime.local().toSeconds()) {
+            chartRefDate = DateTime.local().setLocale('ES').startOf('day');
+        } else chartRefDate = chartRefDate.plus({ month: 1})
+        updateWeekChart(chartRefDate);
+    });
+
     enablemonitor();
 });
 
@@ -86,9 +115,10 @@ function enablemonitor(){
 
     nv.addGraph(initWeekChart);
 
+    $("#referenceDate").text(chartRefDate.toLocaleString("EEE dd 'de' LLL"));
     updateCurrentVal();
     //updateChart6Hours();
-    updateWeekChart();
+    updateWeekChart(chartRefDate);
 };
 
 function activateCarouselImage(id){

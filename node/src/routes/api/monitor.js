@@ -3,36 +3,51 @@ var express = require('express');
 var router = express.Router();
 var { DateTime } = require('luxon');
 var el = require ('../../config/db');
-var ini = DateTime.local();
-var end = DateTime.local();
 const min =  60*1000;
 const hour = 60*min;
-var sampling;
 
 /*** Utility functions ***/
+
+function upsertMetric(array, metric){
+    let i = array.findIndex(m => (m.name==metric.name && m.type==metric.type));
+    if ( i == -1)
+        array.push(metric);
+    else 
+        Object.assign(array[i],metric);
+}
 
 function transform_query(docs){
 
     return new Promise(function(resolve,reject){
 
         var result = [];
-        docs.hits.hits.forEach(function(entry){
-            if (!((entry._source.value == null) || (entry._source.value == NaN))){
+        
+        docs.body.aggregations.min_max.buckets.forEach((entry) => {
+            let min_metric = { name: entry.key, 
+                type: entry.min.hits.hits[0]._source.type, 
+                min: Math.round(entry.min.hits.hits[0]._source.value*10)/10,
+                min_ts: entry.min.hits.hits[0]._source.ts };
+            upsertMetric(result, min_metric);
 
-                var exist_metric = result.find((a) => {
-                        return ((a._id == entry._source.name) && (a.type == entry._source.type));
-                    });
+            let max_metric = { name: entry.key, 
+                type: entry.max.hits.hits[0]._source.type, 
+                max: Math.round(entry.max.hits.hits[0]._source.value*10)/10,
+                max_ts: entry.max.hits.hits[0]._source.ts };
+            upsertMetric(result, max_metric);
+        });
 
-                if (exist_metric){ // la metrica con nombre _id.name ya esta en result, solo hay que añadir el datapoint
-                    exist_metric.values.push(datapoint);
-                } else { // la metrica no esta en result, hay que añadirla con su primer datapoint
-                    var metric = {  '_id' : entry._source.name,
-                                    'type': entry._source.type,
-                                    'timestamp': entry._source.ts, 
-                                    'value': Math.round(entry._source.value*10)/10 };
-                    result.push(metric);
-                }
-            }
+        docs.body.aggregations.last_day.now_yesterday.buckets.forEach((entry) => {
+            let d1_metric = { name: entry.key, 
+                type: entry.yesterday.hits.hits[0]._source.type, 
+                d1_value: Math.round(entry.yesterday.hits.hits[0]._source.value*10)/10,
+                d1_ts: entry.yesterday.hits.hits[0]._source.ts };
+            upsertMetric(result, d1_metric);
+
+            let metric = { name: entry.key, 
+                type: entry.now.hits.hits[0]._source.type, 
+                value: Math.round(entry.now.hits.hits[0]._source.value*10)/10,
+                ts: entry.now.hits.hits[0]._source.ts };
+            upsertMetric(result, metric);
         });
 
         return resolve(result);
@@ -44,7 +59,7 @@ function transform_agg(docs){
     return new Promise(function(resolve,reject){
 
         var result = [];
-        docs.aggregations.nombres.buckets.forEach(function(entry){
+        docs.body.aggregations.nombres.buckets.forEach(function(entry){
             
             entry.cada_30mins.buckets.forEach((val)=>{
                 if (val.doc_count >0) {
@@ -65,25 +80,25 @@ function transform_agg(docs){
     });
 };
 
+function sendResults(res, result){
+    res.contentType('application/json');
+    res.status(200).json(result);
+}
 /*** Defaults parameters ***/
 
 router.use(function (req, res, next) {
 
-    ini = DateTime.local().plus({days:-7}).set({hour:0, minute:0, second:0}).toJSDate();
-    //ini = myDate().subtract(7,'days').startOf('day').toDate();      // default: since one week
-    //end = myDate().toDate();                                        // default: up to now
-    end = DateTime.local();
-    sampling = 5*min;                                               // default: values are averaged on 5 mins intervals
-
     if (req.query.ini){
         //ini = DateTime.fromString(req.query.ini,'yyyy-MM-ddTHH:mm:ss.SSS').toJSDate();
-        ini = DateTime.fromISO(req.query.ini);
-    } 
-    if (req.query.end){
-        end = DateTime.fromISO(req.query.end);
+        req.query.ini = DateTime.fromSeconds(Number(req.query.ini));
+    } else {
+        req.query.ini = DateTime.local().minus({days:7}).startOf('day');
     }
-    if (req.query.sampling){
-        sampling = req.query.sampling*min;
+
+    if (req.query.end){
+        req.query.end = DateTime.fromSeconds(Number(req.query.end));
+    } else {
+        req.query.end = DateTime.local();
     }
 
     next();
@@ -121,7 +136,7 @@ router.get('/', function(req, res, next) { // in fact /api
             }
     })
     .then(transform_query)
-    .then((result)=>{ res.locals.result = result; next();})
+    .then((result)=>sendResults(res,result))
     .catch((error) => next(error));
 });
 
@@ -145,96 +160,25 @@ router.get('/current', function(req, res, next) {
         }
     })
     .then(transform_query)
-    .then((result)=>{ res.locals.result = result; next();})
+    .then((result)=>sendResults(res,result))
     .catch((error) => next(error));
 });
 
 // get historical values for all metrics of some type
 router.get('/:type', function(req, res, next) {
-    
-    el.client.search({
-        index: 'metrics',
-        type: '_doc',
-        body: 
-        {
-            "size": 0,
-            "query": {
-                "bool": {
-                   "filter": [ 
-                       { "term":  { "type": req.params.type } }, 
-                       { "range": { "ts": { "gte" : ini.toMillis(), "lt" :  end.toMillis()} } } 
-                       ]
-                }
-           },
-           "aggs" : {
-               "nombres" : {
-                   "terms" : { "field" : "name.keyword" },
-                   "aggs" : {
-                       "cada_30mins": {
-                           "date_histogram": {
-                               "field": "ts",
-                               "interval": "30m"
-                           }
-                           ,
-                           "aggs": {
-                               "avg_temp": { "avg" : { "field" : "value" } }
-                           }
-                       },
-                        "max_temp": { "max" : { "field" : "value" } },
-                        "min_temp": { "min" : { "field" : "value" } }
-                   }
-               }
-           }
-       }
-
-    })
-    .then(transform_agg)
-    .then((result)=>{ res.locals.result = result; next();})
-    .catch((error) => next(error));  
-});
-
-// get current values of all metrics of some type
-router.get('/:type/current', function(req, res, next) {
-
-    el.client.search({
-        index: 'metrics',
-        type: '_doc',
-        body: 
-        {
-            "query": {
-                "match": {
-                    "type": req.params.type
-                }
-            },
-            "collapse" : {
-                "field" : "name.keyword" 
-            },
-            "sort": {"ts": "desc"}
-        }
-    })
-    .then(transform_query)
-    .then((result)=>{ res.locals.result = result; next();})
-    .catch((error) => next(error));
-});
-
-// get historical values for a type and a name
-router.get('/:type/:name', function(req, res, next) {
-    el.client.search({
-        index: 'metrics',
-        type: '_doc',
-        body:
-        {
+    //  
+    var obj = {
         "size": 0,
         "query": {
             "bool": {
                "filter": [ 
-                   { "term":  { "type": "temperature" } }, 
-                   { "range": { "ts": { "gte" : "now-2d/d", "lt" :  "now"} } } 
+                   { "term":  { "type": req.params.type } },
+                   { "range": { "ts": { "gte" : req.query.ini.toMillis(), "lt" :  req.query.end.toMillis()} } }
                    ]
             }
        },
        "aggs" : {
-           "names" : {
+           "nombres" : {
                "terms" : { "field" : "name.keyword" },
                "aggs" : {
                    "cada_30mins": {
@@ -246,39 +190,142 @@ router.get('/:type/:name', function(req, res, next) {
                        "aggs": {
                            "avg_temp": { "avg" : { "field" : "value" } }
                        }
+                   },
+                    "max_temp": { "max" : { "field" : "value" } },
+                    "min_temp": { "min" : { "field" : "value" } }
+               }
+           }
+       }
+   };
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: obj
+    })
+    .then(transform_agg)
+    .then((result)=>{sendResults(res,result);})
+    .catch((error) => next(error));  
+});
+
+// get current values of all metrics of some type
+router.get('/:type/current', function(req, res, next) {
+
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: 
+        {
+            "size": 0,
+            "query": {
+                "bool": {
+                   "filter": [ 
+                       { "term":  { "type": req.params.type } }, 
+                       { "range": { "ts": { "gte" : req.query.ini.toMillis(), "lt" :  req.query.end.toMillis()} } } 
+                       ]
+                }
+           },
+           "aggs" : {
+               "min_max" : {
+                   "terms" : { "field" : "name.keyword" },
+                   "aggs" : {
+                       "min": {
+                           "top_hits": {
+                               "size": 1,
+                               "sort": [{"value": {"order": "asc"}}]
+                           }
+                       },
+                       "max": {
+                           "top_hits": {
+                               "size": 1,
+                               "sort": [{"value": {"order": "desc"}}]
+                           }
+                       }
+                   }
+               },
+               "last_day":{
+                   "filter": { "range": { "ts": { "gte" : "now-1d", "lt" :  "now"} } },
+                   "aggs": {
+                       "now_yesterday": {
+                           "terms" : { "field" : "name.keyword"},
+                           "aggs": {
+                               "now": {
+                                   "top_hits": {
+                                       "size": 1,
+                                       "sort": [{"ts": {"order": "desc"} }]
+                                   }
+                               },
+                               "yesterday": {
+                                   "top_hits": {
+                                       "size": 1,
+                                       "sort": [{"ts": {"order": "asc"} }]
+                                   }
+                               }
+                           }
+                       }
                    }
                }
            }
        }
-   }
-})
-     .then(transform_agg)
-     .then((result)=>{ res.locals.result = result; next();})
-     .catch((error) => next(error));  
+    })
+    .then(transform_query)
+    .then((result)=>{console.log(JSON.stringify(result));sendResults(res,result);})
+    .catch((error) => next(error));
 });
 
-// get current value for a type and a name
+// get values for a type and a name
 router.get('/:type/:name/current', function(req, res, next) {
     el.client.search({
         index: 'metrics',
         type: '_doc',
         body: 
         {
+            "size": 0,
             "query": {
-                "match": {
-                    "type": req.params.type
+                "bool": {
+                   "filter": [ 
+                       { "term":  { "type": req.params.type } },
+                       { "term" : { "name.keyword" : req.params.name } },
+                       { "range": { "ts": { "gte" : "now-1d", "lt" :  "now"} } } 
+                       ]
                 }
-            },
-            "collapse" : {
-                "field" : "name.keyword" 
-            },
-            "sort": {"ts": "desc"}
-        }
+           },
+           "aggs" : {
+                "min": {
+                    "top_hits": {
+                        "size": 1,
+                        "sort": [{"value": {"order": "asc"}}]
+                    }
+                },
+                "max": {
+                    "top_hits": {
+                        "size": 1,
+                        "sort": [{"value": {"order": "desc"}}]
+                    }
+                },
+                "tiempo": {
+                    "filter": { "range": { "ts": { "gte" : "now-1d", "lt" :  "now"} } },
+                    "aggs": {
+                        "now": {
+                            "top_hits": {
+                                "size": 1,
+                                "sort": [{"ts": {"order": "desc"}}]
+                            }
+                        },
+                        "yesterday": {
+                            "top_hits": {
+                                "size": 1,
+                                "sort": [{"ts": {"order": "asc"}}]
+                            }
+                        }
+                    }
+                }
+            }
+       }
+
     })
-    .then(transform_query)
-    .then((result)=>{ res.locals.result = result; next();})
-    .catch((error) => next(error));
-    
+    .then(transform_agg)
+    .then((result)=>sendResults(res,result))
+    .catch((error) => next(error));    
 });
 
 // insert metric

@@ -22,14 +22,24 @@ const id_name = new Map([
 var timerGraph2hours;
 var timerCurrentVal;
 var timerGraphWeek;
-//var timerBsGraph;
-var DateTime = luxon.DateTime;
-DateTime.local().setLocale("es").locale;
+
 var chartWeek = nv.models.lineWithFocusChart();
 
 /*
     Main week graph
 */
+
+function formatAxis(x_value){
+    let date = DateTime.fromMillis(Number(x_value)).setLocale("ES");
+    if (date.hour == 0) return "|" ;
+    else if (date.hour == 12) {
+        if (Math.round(date.diffNow('day').as('days')) == 0) return "hoy";
+        else return date.toFormat("EEE dd 'de' LLL");
+    }
+    else return date.toFormat("HH:ss");
+}
+
+
 function initWeekChart(){
     
     // mapear x e y hacia las columnas
@@ -41,32 +51,30 @@ function initWeekChart(){
     // formato ejes
     chartWeek.xAxis
         //.staggerLabels(true)
-        .tickFormat(function (d) {
-            
-        return d3.time.format('%a %d - %H:%M')(new Date(d));
-    });
+        .tickFormat((d)=>formatAxis(d));
     
     chartWeek.x2Axis
         //.staggerLabels(true)
-        .tickFormat(function (d) {
-        return d3.time.format('%a %d - %H:%M')(new Date(d));
-    });
-    chartWeek.margin({top: 50, right: 50, bottom: 50, left: 50})
+        .tickFormat((d)=>formatAxis(d));
+
+    chartWeek.margin({top: 50, right: 100, bottom: 50, left: 50})
     chartWeek.yTickFormat(d3.format(',.1f'));
     chartWeek.yAxis.axisLabel("ºC");
     chartWeek.interpolate("basis");
     chartWeek.useInteractiveGuideline(true);
+    chartWeek.legend.keyFormatter = (d) => DateTime.fromMillis(Number(d)).toFormat("HH:ss");
 
     return chartWeek;
 };
 
-function updateWeekChart(){
+function updateWeekChart(refDate){
 
-    var now = new Date();
-    var lastweek = new Date();
-    lastweek.setHours(-24*7,0,0,0);
+    $("#referenceDate").text(refDate.toFormat("EEE dd 'de' LLL"));
 
-    d3.json(API_BASEURL+"/temperature?sampling=30&ini="+lastweek.toISOString(), function(error, data) {	
+    var ini = refDate.minus({day: 5}).startOf('day');
+    var end = refDate.plus({day: 2}).startOf('day');
+
+    d3.json(API_BASEURL+"/temperature?sampling=30&ini="+ini.toSeconds()+"&end="+end.toSeconds(), function(error, data) {
         if (error) return console.log(error);
 
         //var max = d3.max(data, function(c) { return d3.max(c.values, function(d) { return d.y; }); })+1; 
@@ -74,16 +82,16 @@ function updateWeekChart(){
         //chartWeek.forceY([min, max]);
         
         var weekticks = [];
-        var s = new Date(lastweek);// new Date($('#hfEventStartDate').val() - 0);
-        while(s.valueOf() < now.valueOf()) {
-            weekticks.push(s);
-            s = new Date(s.setDate(
-                s.getDate() + 1
-            ));
-        }
+        var s = ini;
+        while(s.toSeconds() <= end.toSeconds()) {
+            weekticks.push(s.toJSDate());
+            s = s.plus({hours: 12});
+        };
 
         chartWeek.xAxis.tickValues(weekticks);
+        chartWeek.xAxis.scale(d3.time.scale().domain([ini.toJSDate(),end.toJSDate()]));
         chartWeek.x2Axis.tickValues(weekticks);
+        chartWeek.x2Axis.scale(d3.time.scale().domain([ini.toJSDate(),end.toJSDate()]));
 
         data.forEach(function(element){element.key=id_name.get(element.key);});
 
@@ -94,44 +102,36 @@ function updateWeekChart(){
         nv.utils.windowResize(chartWeek.update);
     });
 
-    timerGraphWeek = setTimeout(updateWeekChart, TIMER_GWEEK);
+    timerGraphWeek = setTimeout(function() {updateWeekChart(chartRefDate)}, TIMER_GWEEK);
     
 };
 
 function updateCurrentVal(){
-    /*
-    $.getJSON( API_BASEURL+"/temperature/Exterior/current", function( data ) {
-        let temp= parseFloat(data[0].value);
-        var radialObj = $('#ExteriorIndicator').data('radialIndicator');
-        //radialObj.option('displayNumber',false);
-        radialObj.animate(temp);
-        //radialObj.option('displayNumber',true);
-    });
-    */
-
-
     
     $.getJSON( API_BASEURL+"/temperature/current", function( data ) {
-        $.each( data, function(key,val) {
-            let id = val._id;
-            let name = id_name.get(id);
-            let temp= parseFloat(val.value);
-            let m = DateTime.fromISO(val.timestamp);
+        data.forEach( (metric) => {
+            
+            let dif = (parseFloat(metric.d1_value) - parseFloat(metric.value))
+            let s_dif = (dif>0?'+':'') + dif.toFixed(1);
+            let m = DateTime.fromISO(metric.ts);
             let ts = "";
             if(m < DateTime.local().startOf('day')){
-                ts = m.setLocale('es').toFormat('ccc d LLL HH:mm');
+                ts = m.setLocale('ES').toFormat('ccc d LLL HH:mm');
             } else {
                 ts = m.toFormat('HH:mm');
             };
 
             // update radial indicator
-            if (id=="EXTERIOR"){
+            if (metric.name=="EXTERIOR"){
                 var radialObj = $('#ExteriorIndicator').data('radialIndicator');
-                radialObj.animate(temp);
+                radialObj.animate(metric.value);
             }
 
-            $("#temp-"+id).text(temp.toFixed(1));
-            $("#temp-ts-"+id).text(ts);
+            $("#temp-"+metric.name).text(parseFloat(metric.value).toFixed(1));
+            $("#temp-ts-"+metric.name).text(ts);
+            $("#temp-max-"+metric.name+" span").text(parseFloat(metric.max).toFixed(1)+"ºC");
+            $("#temp-avg-"+metric.name).text(s_dif+"ºC");
+            $("#temp-min-"+metric.name+" span").text(parseFloat(metric.min).toFixed(1)+"ºC");
             
         });
     });

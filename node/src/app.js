@@ -34,6 +34,12 @@ app.use('/main.html', auth.required, (req,res,next) =>
 // rutas por defecto Express
 app.use(express.static(path.join(__dirname, 'public'))); //auth.required.unless({path:['/index.html','/login.html']})
 
+// catch API errors, send 500 status and error JSON
+app.all('/api', (err, req, res, next) => {
+    // default to 500 server error
+    return res.status(500).json({status: 500, error: {message: err.message}});
+});
+
 // catch errors, send 500 status and error JSON
 app.use((err, req, res, next) => {
     
@@ -41,11 +47,11 @@ app.use((err, req, res, next) => {
         return res.status(401).redirect('/login.html');
     }
     // default to 500 server error
-    return res.status(500).redirect('/index.html');
+    return res.status(500).json({status: 500, error: {message: err.message}});
 });
 
 // load mqtt - elastic bridge
-require('./mqtt/mqtt-elastic');
+//require('./mqtt/mqtt-elastic');
 
 // modulo Express por defecto
 module.exports = app;
