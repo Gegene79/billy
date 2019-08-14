@@ -84,8 +84,8 @@ function sendResults(res, result){
     res.contentType('application/json');
     res.status(200).json(result);
 }
-/*** Defaults parameters ***/
 
+/*** set defaults parameters ***/
 router.use(function (req, res, next) {
 
     if (req.query.ini){

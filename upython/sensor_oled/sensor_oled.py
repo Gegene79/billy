@@ -19,8 +19,8 @@ import font_sensor_20
 class OledScreen():
     """Clase para gestionar la pantalla OLED"""
 
-    SCL_PIN = 5  # D1
-    SDA_PIN = 4  # D2
+    SCL_PIN = 4  # D2
+    SDA_PIN = 0  # D3
 
     def __init__(self):
         self.I2C = machine.I2C(scl=machine.Pin(self.SCL_PIN), sda=machine.Pin(self.SDA_PIN))

@@ -14,6 +14,7 @@ const debug = require('debug')('main');
 const isProduction = (process.env.NODE_ENV === 'production');
 
 // express rutas por defecto
+var usersRouter = require('./routes/users');
 var apiRouter = require('./routes/api/index');
 
 // declaración por defecto de app Express
@@ -27,27 +28,35 @@ app.use(cors()); // añadimos CORS
 app.use(cookieParser(process.env.SECRET)); //  modificado para descodificar las signed-cookies
 
 
+// APIs sin authentication
+app.use('/users', usersRouter);
+
 // redirige hacia las apis
 app.use('/api', auth.required.unless({path:['/api/users/signup','/api/users/login']}), apiRouter);
-app.use('/main.html', auth.required, (req,res,next) => 
-    { debug('main.html solicitado'); next()});
+
+// users.login y users.signup
+app.use('/users', auth.optional);
+
+// protect all other assets unless index.html
+app.use('/*', auth.required.unless({path:['/index.html','/login.html']}), (req,res,next) => next());
+
 // rutas por defecto Express
 app.use(express.static(path.join(__dirname, 'public'))); //auth.required.unless({path:['/index.html','/login.html']})
 
 // catch API errors, send 500 status and error JSON
-app.all('/api', (err, req, res, next) => {
-    // default to 500 server error
-    return res.status(500).json({status: 500, error: {message: err.message}});
+app.use('/api',(err, req, res, next) => {
+    console.error("Caught API error, responding json.\r\nStacktrace: "+err.stacktrace);
+    err.status = err.status || 500;
+    return res.status(err.status).json({error: {message: err.message, stacktrace: err.stacktrace}});
 });
 
-// catch errors, send 500 status and error JSON
+// catch other errors, send 500 status and redirecto to login
 app.use((err, req, res, next) => {
-    
-    if (err.name === 'UnauthorizedError')  {
-        return res.status(401).redirect('/login.html');
-    }
-    // default to 500 server error
-    return res.status(500).json({status: 500, error: {message: err.message}});
+    console.error("Caught error, redirecting to login.\r\nStacktrace: "+err.stacktrace);
+    err.status = err.status || 500;
+    if (err.constructor.name == "CredentialsError" || err.constructor.name == "UnauthorizedError")
+        return res.status(err.status).redirect('/login.html');
+    return res.status(err.status).redirect('/index.html');
 });
 
 // load mqtt - elastic bridge

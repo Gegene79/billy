@@ -76,6 +76,9 @@ pipeline {
                 echo "Restart Dockers"
                 sh "ssh -p 979 ${env.TARGET_HOST} \"cd ${env.TARGET_PATH} \
                         && sudo docker-compose up -d\""
+                
+                echo "Tidy up workspace"
+                cleanWs()
                 echo "Done."                    
             }
         }

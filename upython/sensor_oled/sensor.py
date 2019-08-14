@@ -53,7 +53,8 @@ def main():
                     .format(Const.id(), m.temperature(), m.timestamp())
                 print("send message " + msg + " on topic " + topic)
                 if Mqtt.send_message(topic=topic, message=msg):
-                    Const.blink_led1()
+                    print("Temperature message sent.")
+                    # Const.blink_led1()
                 else:
                     MetricsBuffer.append(m)
                     break
@@ -63,7 +64,8 @@ def main():
                 msg = "{{\"name\":\"{}\",\"type\":\"humidity\",\"value\":{:.2f},\"ts\":{:d}}}"\
                     .format(Const.id(), m.humidity(), m.timestamp())
                 if Mqtt.send_message(topic=topic, message=msg):
-                    Const.blink_led1()
+                    print("Humidity message sent.")
+                    # Const.blink_led1()
 
             except Exception as e:
                 if isinstance(e, IndexError):
@@ -82,7 +84,7 @@ def main():
             for data in response:
                 if data['_id'] == "EXTERIOR":
                     ext_temp = data['value']
-                    Const.blink_led2(duration=30, iterations=3)
+                    # Const.blink_led2(duration=30, iterations=3)
 
         except Exception as e:
             print("Error in getting exterior temperature: " + str(e))

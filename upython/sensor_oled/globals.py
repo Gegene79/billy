@@ -3,6 +3,7 @@ import dht
 import network
 import ujson
 import utime
+import urequests
 
 # Micropython | Board
 # 0|D3
@@ -22,7 +23,7 @@ import utime
 class Constant:
     """Clase para gestionar el wifi, las variables de entorno y el sensor DHT"""
 
-    DHT_PIN = 0    # D3
+    DHT_PIN = 2    # D4
     LED1_PIN = 2   # D4
     LED2_PIN = 16  # D0
     LED1 = machine.Pin(LED1_PIN, machine.Pin.OUT)
@@ -54,6 +55,22 @@ class Constant:
                     pass
             print('\nConnected. Network config:', self.WLAN.ifconfig())
         return True
+
+    def getToken(self):
+        """Get token to connect to APIs"""
+        pb_headers = {
+            'Content-Type': 'application/json'
+        }
+        data_sent = {"type": "note", "title": title, "body": body}
+
+        resp = urequests.post('http://192.168.1.2/api/users/login', data=json.dumps(data_sent), headers=pb_headers )
+        print("Decode json")
+        response = ujson.loads(resp.text)
+        print("iterate over records")
+        for data in response:
+            if data['_id'] == "EXTERIOR":
+                ext_temp = data['value']
+                # Const.blink_led2(duration=30, iterations=3)
 
     def blink_led1(self, duration=20, iterations=1):
         """Blink integrated led"""
