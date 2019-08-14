@@ -60,7 +60,7 @@ app.use((err, req, res, next) => {
 });
 
 // load mqtt - elastic bridge
-//require('./mqtt/mqtt-elastic');
+require('./mqtt/mqtt-elastic');
 
 // modulo Express por defecto
 module.exports = app;
