@@ -31,14 +31,11 @@ app.use(cookieParser(process.env.SECRET)); //  modificado para descodificar las 
 // APIs sin authentication
 app.use('/users', usersRouter);
 
-// redirige hacia las apis
+// redirige hacia las apis con authentication
 app.use('/api', auth.required.unless({path:['/api/users/signup','/api/users/login']}), apiRouter);
 
-// users.login y users.signup
-app.use('/users', auth.optional);
-
 // protect all other assets unless index.html
-app.use('/*', auth.required.unless({path:['/index.html','/login.html']}), (req,res,next) => next());
+app.use('/main.html', auth.required, (req,res,next) => next());
 
 // rutas por defecto Express
 app.use(express.static(path.join(__dirname, 'public'))); //auth.required.unless({path:['/index.html','/login.html']})
@@ -60,7 +57,7 @@ app.use((err, req, res, next) => {
 });
 
 // load mqtt - elastic bridge
-require('./mqtt/mqtt-elastic');
+//require('./mqtt/mqtt-elastic');
 
 // modulo Express por defecto
 module.exports = app;

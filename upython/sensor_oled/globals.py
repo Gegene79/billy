@@ -31,6 +31,7 @@ class Constant:
     RTC = machine.RTC()
     DHT = dht.DHT22(machine.Pin(DHT_PIN))
     WLAN = network.WLAN(network.STA_IF)
+    Token = ""
 
     def __init__(self):
         with open('env.json') as fp:
@@ -56,21 +57,56 @@ class Constant:
             print('\nConnected. Network config:', self.WLAN.ifconfig())
         return True
 
-    def getToken(self):
+    def get_token(self):
         """Get token to connect to APIs"""
-        pb_headers = {
+        headers = {
             'Content-Type': 'application/json'
         }
-        data_sent = {"type": "note", "title": title, "body": body}
+        data = {
+            "user": {
+                "email": self.SECRETS['api']['email'],
+                "password": self.SECRETS['api']['pass']
+                }
+            }
 
-        resp = urequests.post('http://192.168.1.2/api/users/login', data=json.dumps(data_sent), headers=pb_headers )
-        print("Decode json")
-        response = ujson.loads(resp.text)
-        print("iterate over records")
-        for data in response:
-            if data['_id'] == "EXTERIOR":
-                ext_temp = data['value']
-                # Const.blink_led2(duration=30, iterations=3)
+        resp = urequests.post(self.SECRETS['api']['base_url']+'/api/users/login', json=data, headers=headers)
+
+        if resp.status_code == 200:
+            data = ujson.loads(resp.text)
+            self.Token = data['jwt']
+            print('Got token.')
+            Const.blink_led2(duration=30, iterations=3)
+        else:
+            print("Error "+str(resp.status_code)+": "+resp.text)
+
+    def ext_temp(self):
+        if self.Token == "":
+            self.get_token()
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + self.Token
+        }
+        resp = urequests.get(self.SECRETS['api']['base_url'] + '/api/monitor/temperature/exterior/current', headers=headers)
+
+        if resp.status_code == 200:
+            data = ujson.loads(resp.text)
+            print("iterate over records")
+            for linea in data:
+                if linea['name'] == "EXTERIOR":
+                    ext_temp = linea['value']
+                    print("Exterior temperature: "+str(ext_temp))
+                    resp.close()
+                    return ext_temp
+            resp.close()
+            raise Exception("Exterior Temperature not found in response")
+
+        elif resp.status_code == 401:
+            self.get_token()
+            self.ext_temp()
+
+        else:
+            raise Exception("Received error "+str(resp.status_code)+": "+resp.text)
 
     def blink_led1(self, duration=20, iterations=1):
         """Blink integrated led"""

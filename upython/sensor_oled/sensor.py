@@ -76,15 +76,7 @@ def main():
 
         # Update exterior temperature value
         try:
-            print("launch request")
-            resp = urequests.get('http://192.168.1.2/api/monitor/temperature/current')
-            print("Decode json")
-            response = ujson.loads(resp.text)
-            print("iterate over records")
-            for data in response:
-                if data['_id'] == "EXTERIOR":
-                    ext_temp = data['value']
-                    # Const.blink_led2(duration=30, iterations=3)
+            ext_temp = Const.ext_temp()
 
         except Exception as e:
             print("Error in getting exterior temperature: " + str(e))

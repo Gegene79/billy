@@ -197,6 +197,7 @@ router.get('/:type', function(req, res, next) {
            }
        }
    };
+
     el.client.search({
         index: 'metrics',
         type: '_doc',
@@ -206,6 +207,7 @@ router.get('/:type', function(req, res, next) {
     .then((result)=>{sendResults(res,result);})
     .catch((error) => next(error));  
 });
+
 
 // get current values of all metrics of some type
 router.get('/:type/current', function(req, res, next) {
@@ -272,8 +274,54 @@ router.get('/:type/current', function(req, res, next) {
     .catch((error) => next(error));
 });
 
-// get values for a type and a name
+// get historical values for one metrics of some type
+router.get('/:type/:name', function(req, res, next) {
+    //  
+    var obj = {
+        "size": 0,
+        "query": {
+            "bool": {
+               "filter": [ 
+                   { "term":  { "type": req.params.type } },
+                   { "term":  { "name": req.params.name } },
+                   { "range": { "ts": { "gte" : req.query.ini.toMillis(), "lt" :  req.query.end.toMillis()} } }
+                   ]
+            }
+       },
+       "aggs" : {
+           "nombres" : {
+               "terms" : { "field" : "name.keyword" },
+               "aggs" : {
+                   "cada_30mins": {
+                       "date_histogram": {
+                           "field": "ts",
+                           "interval": "30m"
+                       }
+                       ,
+                       "aggs": {
+                           "avg_temp": { "avg" : { "field" : "value" } }
+                       }
+                   },
+                    "max_temp": { "max" : { "field" : "value" } },
+                    "min_temp": { "min" : { "field" : "value" } }
+               }
+           }
+       }
+   };
+   
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: obj
+    })
+    .then(transform_agg)
+    .then((result)=>{sendResults(res,result);})
+    .catch((error) => next(error));  
+});
+
+// get current values of all metrics of some type
 router.get('/:type/:name/current', function(req, res, next) {
+
     el.client.search({
         index: 'metrics',
         type: '_doc',
@@ -283,49 +331,58 @@ router.get('/:type/:name/current', function(req, res, next) {
             "query": {
                 "bool": {
                    "filter": [ 
-                       { "term":  { "type": req.params.type } },
-                       { "term" : { "name.keyword" : req.params.name } },
-                       { "range": { "ts": { "gte" : "now-1d", "lt" :  "now"} } } 
+                       { "term":  { "type": req.params.type } }, 
+                       { "term":  { "name": req.params.name } },
+                       { "range": { "ts": { "gte" : req.query.ini.toMillis(), "lt" :  req.query.end.toMillis()} } } 
                        ]
                 }
            },
            "aggs" : {
-                "min": {
-                    "top_hits": {
-                        "size": 1,
-                        "sort": [{"value": {"order": "asc"}}]
-                    }
-                },
-                "max": {
-                    "top_hits": {
-                        "size": 1,
-                        "sort": [{"value": {"order": "desc"}}]
-                    }
-                },
-                "tiempo": {
-                    "filter": { "range": { "ts": { "gte" : "now-1d", "lt" :  "now"} } },
-                    "aggs": {
-                        "now": {
-                            "top_hits": {
-                                "size": 1,
-                                "sort": [{"ts": {"order": "desc"}}]
-                            }
-                        },
-                        "yesterday": {
-                            "top_hits": {
-                                "size": 1,
-                                "sort": [{"ts": {"order": "asc"}}]
-                            }
-                        }
-                    }
-                }
-            }
+               "min_max" : {
+                   "terms" : { "field" : "name.keyword" },
+                   "aggs" : {
+                       "min": {
+                           "top_hits": {
+                               "size": 1,
+                               "sort": [{"value": {"order": "asc"}}]
+                           }
+                       },
+                       "max": {
+                           "top_hits": {
+                               "size": 1,
+                               "sort": [{"value": {"order": "desc"}}]
+                           }
+                       }
+                   }
+               },
+               "last_day":{
+                   "filter": { "range": { "ts": { "gte" : "now-1d", "lt" :  "now"} } },
+                   "aggs": {
+                       "now_yesterday": {
+                           "terms" : { "field" : "name.keyword"},
+                           "aggs": {
+                               "now": {
+                                   "top_hits": {
+                                       "size": 1,
+                                       "sort": [{"ts": {"order": "desc"} }]
+                                   }
+                               },
+                               "yesterday": {
+                                   "top_hits": {
+                                       "size": 1,
+                                       "sort": [{"ts": {"order": "asc"} }]
+                                   }
+                               }
+                           }
+                       }
+                   }
+               }
+           }
        }
-
     })
-    .then(transform_agg)
-    .then((result)=>sendResults(res,result))
-    .catch((error) => next(error));    
+    .then(transform_query)
+    .then((result)=>{console.log(JSON.stringify(result));sendResults(res,result);})
+    .catch((error) => next(error));
 });
 
 // insert metric
