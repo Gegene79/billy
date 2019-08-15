@@ -136,6 +136,13 @@ function updateCurrentVal(){
         });
     });
 
+    $.getJSON( API_BASEURL+"/sensor/current", function( data ) {
+        data.forEach( (sensor) => {
+            
+            $("#voltage-"+sensor._source.name).text(parseFloat(sensor._source.V).toFixed(1)+"V");
+            
+        });
+    });
 
     //$.getJSON("http://api.openweathermap.org/data/2.5/forecast?id=524901&APPID={APIKEY}")
 

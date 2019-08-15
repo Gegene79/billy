@@ -34,10 +34,11 @@ $(function() {
     });
 
     $('#ExteriorIndicator').radialIndicator({
+        barBgColor: '#FFFFFF',
         displayNumber: false,
         barColor: '#87CEEB',
-        radius: 70,
-        barWidth: 3,
+        radius: 80,
+        barWidth: 4,
         roundCorner : false,
         percentage: false,
         minValue: -10,
@@ -45,7 +46,7 @@ $(function() {
         fontfamily: "font-family: 'Open Sans', sans-serif;",
         fontWeight: 'normal',
         frameTime: 1,
-        frameNum: 600
+        frameNum: 300
     });
 
     // monitor event handlers

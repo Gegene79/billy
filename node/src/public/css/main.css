@@ -45,8 +45,24 @@ text {
 .temperature-title{
     display: table-row;
     vertical-align: bottom;
+}
+
+.temperature-inner-title{
+    display: table-cell;
+    vertical-align: bottom;
     font-size: 1.5em;
     text-align: center;
+    line-height: 100%;
+    font-family: 'Open Sans', sans-serif;
+    color: #aaa;
+}
+
+.temperature-inner-voltage{
+    display: table-cell;
+    vertical-align: bottom;
+    font-size: 1em;
+    text-align: right;
+    vertical-align: top;
     line-height: 100%;
     font-family: 'Open Sans', sans-serif;
     color: #aaa;
@@ -95,6 +111,10 @@ text {
 }
 #ExteriorIndicator{
     position: absolute;
+    z-index: -10;
+    right: -0.2em;
+    top: -1.2em;
+    transform: rotate(-40deg);
 }
 .col-md-2{
     display:flex;justify-content:center;align-items:center;

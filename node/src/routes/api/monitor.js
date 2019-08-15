@@ -164,6 +164,23 @@ router.get('/current', function(req, res, next) {
     .catch((error) => next(error));
 });
 
+// get current status for all sensors
+router.get('/sensor/current', function(req, res, next) {
+    
+    el.client.search({
+        index: 'sensors',
+        type: '_doc',
+        body: 
+        {
+            "query": { "match_all": {}},
+            "collapse" : { "field" : "name.keyword"},
+            "sort": {"ts": "desc"}
+       }
+    })
+    .then((result)=>sendResults(res,result.body.hits.hits))
+    .catch((error) => next(error));
+});
+
 // get historical values for all metrics of some type
 router.get('/:type', function(req, res, next) {
     //  
@@ -396,5 +413,7 @@ router.post('/:type/:name', function(req,res,next){
     
     
 });
+
+
 
 module.exports = router;
