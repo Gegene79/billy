@@ -28,6 +28,19 @@ const getTokenFromCookie = (req) => {
   return null;
 };
 
+const getToken = (req) => {
+  var token = req.cookies.jwt;
+  const { headers: { authorization } } = req;
+
+  if (token) {
+    return token;
+  }
+  else if(authorization && authorization.split(' ')[0] === 'Bearer') {
+    return authorization.split(' ')[1];
+  }
+  else return null;
+};
+
 exports.checkUserCredentials = async (user) => {
 
   let resp = await el.client.search({
@@ -75,13 +88,13 @@ exports.insertNewUser = async (user) => {
 exports.required = 
   jwt({
     secret: process.env.SECRET,
-    getToken: getTokenFromCookie,
+    getToken: getToken,
   });
 
 exports.optional = 
   jwt({
     secret: process.env.SECRET,
-    getToken: getTokenFromCookie,
+    getToken: getToken,
     credentialsRequired: false
     });
 

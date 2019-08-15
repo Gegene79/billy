@@ -13,7 +13,7 @@
 // #define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 //DHT dht(DHTPIN, DHTTYPE);
 dht DHT;
-#define DHT22_PIN 15
+#define DHT22_PIN 17
 
 WiFiClient wifiClient;
 PubSubClient mqClient(wifiClient);
@@ -38,8 +38,10 @@ const char* TOPIC_PATH = "casa/";
 enum metric_type { temperature = 0 , humidity = 1 , voltage = 2};
 const char* TYPES[] = { "temperature", "humidity", "voltage" };
 const int uS_TO_S_FACTOR = 1000000;  /* Conversion factor for micro seconds to seconds */
-const int TIME_TO_SLEEP = 300;     /* Time ESP32 will go to sleep (in seconds) */
-const uint8_t METRICS_BUFFER = 200;
+const int TIME_TO_SLEEP = 600;       /* 300 Time ESP32 will go to sleep (in seconds) */
+const int WKUP_SEND_DATA = 3;        /*   6 Send data every 6 wake ups -> every 30 mins */
+const int WKUP_UPDATE_HOUR = 134;    /* 268 Reset RTC hour every 268 wake ups -> every 24 hours */
+const uint8_t METRICS_BUFFER = 200;  /* > 24 hours of data */
 const unsigned long E1979 = 1546297200;
 const uint8_t RETRY = 2;
 /*
@@ -162,7 +164,7 @@ const uint8_t RETRY = 2;
 
   float readBatteryVoltage(){
     //float value = (150.0f/100.0f) * 3.30f * float(analogRead(ADC_PIN)) / 4096.0f;
-    float value = (9.1f/2.0f) * 3.30f * float(analogRead(ADC_PIN)) / 4096.0f;
+    float value = 2.0f * 3.30f * float(analogRead(ADC_PIN)) / 4096.0f;
     Serial.print("Battery voltage: ");Serial.print(value);Serial.println(" V");
     return value;
   }
@@ -422,7 +424,7 @@ void setup() {
   metrics[Status.currentMetric].date = getAproxDate();
   commit(metrics[Status.currentMetric]);
 
-  if (Status.bootcount % 268 == 0) { // 5 mins x 268 = 24 hours -> every day
+  if (Status.bootcount % WKUP_UPDATE_HOUR == 0) { // every 24 hours
       if (setup_wifi()) {
         getNTPDate(RETRY);
         if (mq_connect()){
@@ -434,7 +436,7 @@ void setup() {
       }
   }
 
-  if (Status.bootcount % 6 == 0) { // every 30 mins
+  if (Status.bootcount % WKUP_SEND_DATA == 0) { // every 30 mins
       if (setup_wifi()) {
         if (mq_connect()){
           send_results();
