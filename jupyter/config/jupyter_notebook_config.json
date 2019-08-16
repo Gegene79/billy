@@ -1,0 +1,10 @@
+{
+    "NotebookApp": {
+      "password": "sha1:fa178dbf4bde:b0a0b870c2b290edca5d6d21daec72f239f2352e",
+      "tornado_settings": {
+            "headers":{
+                "Content-Security-Policy": "frame-ancestors self http://petitbilly"
+            }
+        }
+    }
+}
