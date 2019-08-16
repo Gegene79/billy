@@ -110,4 +110,4 @@ function processStatusMsg(message){
 };
 
 exports.processMetric = processMetric
-exports.saveStatusMsg = saveStatusMsg
+exports.processStatusMsg = processStatusMsg
