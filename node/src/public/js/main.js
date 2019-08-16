@@ -3,9 +3,11 @@
 $(function() {
     // Handler for .ready() called.
 
-    $('#photos').click(function(){ enablephotos(); browseimages(); return false; });
+    $('#photos').click(function(){ disableMonitor(); disableNotebook(); enablePhotos(); browseimages(); return false; });
 
-    $('#monitor').click(function(){ enablemonitor(); return false; });
+    $('#monitor').click(function(){ disablePhotos(); disableNotebook(); enableMonitor(); return false; });
+
+    $('#notebook').click(function(){ disablePhotos(); disableMonitor(); enableNotebook(); return false; });
 
     $( '#search-btn' ).on('click',function(){
         event.preventDefault();
@@ -78,42 +80,37 @@ $(function() {
         updateWeekChart(chartRefDate);
     });
 
-    enablemonitor();
+    disablePhotos();
+    disableNotebook();
+    enableMonitor();
 });
 
-function enablephotos(){
-    // stop refreshing
-    clearTimeout(timerCurrentVal);
-    clearTimeout(timerGraphWeek);
-
-    d3.selectAll('#chart_week svg > *').remove();
+function enablePhotos(){
     
-    $('#container-monitor').addClass('d-none');
-    $('.nvtooltip').remove();
-
     $('#container-photos').removeClass('d-none');
     $('#div-search-bar').removeClass('d-none');
     $('#div-text-results').removeClass('d-none');
     $('#div-nav-pg-btn').removeClass('d-none');
     $('#scan-btn').removeClass('d-none');
 
-    $('#monitor').parent().removeClass('active');
     $('#photos').parent().addClass('active');
 
 };
 
-
-function enablemonitor(){
+function disablePhotos(){
     $('#container-photos').addClass('d-none');
     $('#div-search-bar').addClass('hidden');
     $('#div-text-results').addClass('hidden');
     $('#div-nav-pg-btn').addClass('hidden');
     $('#scan-btn').addClass('hidden');
+    $('#photos').parent().removeClass('active');
+};
+
+function enableMonitor(){
     
     $('#container-monitor').removeClass('d-none');
     $('#monitor').parent().addClass('active');
-    $('#photos').parent().removeClass('active');
-
+    
     nv.addGraph(initWeekChart);
 
     $("#referenceDate").text(chartRefDate.toLocaleString("EEE dd 'de' LLL"));
@@ -121,6 +118,28 @@ function enablemonitor(){
     //updateChart6Hours();
     updateWeekChart(chartRefDate);
 };
+
+function disableMonitor(){
+    // stop refreshing
+    clearTimeout(timerCurrentVal);
+    clearTimeout(timerGraphWeek);
+
+    d3.selectAll('#chart_week svg > *').remove();
+
+    $('#container-monitor').addClass('d-none');
+    $('.nvtooltip').remove();
+    $('#monitor').parent().removeClass('active');
+};
+
+function enableNotebook() {
+    $('#container-notebook').removeClass('d-none');
+    $('#notebook').parent().addClass('active');
+}
+
+function disableNotebook() {
+    $('#container-notebook').addClass('d-none');
+    $('#notebook').parent().removeClass('active');
+}
 
 function activateCarouselImage(id){
     //$('#pig').addClass('d-none');

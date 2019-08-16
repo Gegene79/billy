@@ -88,7 +88,6 @@ text {
 
 .temperature-minmax{
     display: table-cell;
-    padding-left: 1em;
     text-align: right;
     vertical-align: top;
     line-height: 100%;

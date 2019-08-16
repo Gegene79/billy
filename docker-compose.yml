@@ -30,7 +30,7 @@ services:
     build: ./mqtt/
     restart: always
     volumes:
-      - /docker/mqtt/config/:/mosquitto/conf/
+      - /home/fabien/mqtt-data/:/mosquitto/data/
     ports:
     - "980:1883"
     networks:
