@@ -97,7 +97,7 @@ function processMetric(metric){
 };
 
 
-function saveStatusMsg(message){
+function processStatusMsg(message){
         
     el.client.index({
         index: process.env.EL_SENSOR_INDEX,
