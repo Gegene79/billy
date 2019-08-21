@@ -46,7 +46,8 @@ function transform_query(docs){
             let metric = { name: entry.key, 
                 type: entry.now.hits.hits[0]._source.type, 
                 value: Math.round(entry.now.hits.hits[0]._source.value*10)/10,
-                ts: entry.now.hits.hits[0]._source.ts };
+                ts: entry.now.hits.hits[0]._source.ts,
+                timestamp: DateTime.fromISO(entry.now.hits.hits[0]._source.ts).toSeconds() };
             upsertMetric(result, metric);
         });
 
