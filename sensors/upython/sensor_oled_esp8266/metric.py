@@ -3,7 +3,7 @@ import utime
 import ucollections
 from globals import Const
 MAX_BUFFER = 200
-UNIX_TS_CONVERT = 946684800  # necessary to convert epoch since 01-01-2000 to epoch since 01-01-1970
+UNIX_TS_CONVERT = 946684800  # necessary to convert 'epoch since 01-01-2000' to 'epoch since 01-01-1970'
 
 
 class Metric:

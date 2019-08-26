@@ -1,9 +1,13 @@
+import gc
 import machine
 import dht
+gc.collect()
 import network
 import ujson
 import utime
+gc.collect()
 import urequests
+
 
 # Micropython | Board
 # 0|D3
@@ -23,7 +27,7 @@ import urequests
 class Constant:
     """Clase para gestionar el wifi, las variables de entorno y el sensor DHT"""
 
-    DHT_PIN = 2    # D4
+    DHT_PIN = 10    # SD2
     LED1_PIN = 2   # D4
     LED2_PIN = 16  # D0
     LED1 = machine.Pin(LED1_PIN, machine.Pin.OUT)
@@ -31,16 +35,17 @@ class Constant:
     RTC = machine.RTC()
     DHT = dht.DHT22(machine.Pin(DHT_PIN))
     WLAN = network.WLAN(network.STA_IF)
+    WLAN_AP = network.WLAN(network.AP_IF)
     Token = ""
 
     def __init__(self):
+        self.WLAN_AP.active(False)
         with open('env.json') as fp:
             self.SECRETS = ujson.loads(fp.read())
             fp.close()
 
     def connect(self):
         """Connect to Wifi Network"""
-        print("Connect to Wifi...")
         self.WLAN.active(True)
         if not self.WLAN.isconnected():
             print('connecting to network...')
@@ -54,8 +59,12 @@ class Constant:
                     return False
                 else:
                     pass
-            print('\nConnected. Network config:', self.WLAN.ifconfig())
+        print('\nConnected. Network config:', self.WLAN.ifconfig())
         return True
+
+    def disconnect(self):
+        self.WLAN.disconnect()
+        self.WLAN.active(False)
 
     def get_token(self):
         """Get token to connect to APIs"""
@@ -94,16 +103,20 @@ class Constant:
             print("iterate over records")
             for linea in data:
                 if linea['name'] == "EXTERIOR":
-                    ext_temp = linea['value']
-                    print("Exterior temperature: "+str(ext_temp))
+                    temp = linea['value']
+                    ts = linea['ts']
+                    obj = {'temp': temp, 'ts': ts}
+                    print("Exterior temperature: "+str(obj))
                     resp.close()
-                    return ext_temp
+                    gc.collect()
+                    return obj
             resp.close()
             raise Exception("Exterior Temperature not found in response")
 
         elif resp.status_code == 401:
             self.get_token()
             self.ext_temp()
+            gc.collect()
 
         else:
             raise Exception("Received error "+str(resp.status_code)+": "+resp.text)
