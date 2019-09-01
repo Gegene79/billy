@@ -47,7 +47,7 @@ function transform_query(docs){
                 type: entry.now.hits.hits[0]._source.type, 
                 value: Math.round(entry.now.hits.hits[0]._source.value*10)/10,
                 ts: entry.now.hits.hits[0]._source.ts,
-                timestamp: DateTime.fromISO(entry.now.hits.hits[0]._source.ts).toSeconds() };
+                timestamp: Math.round(DateTime.fromISO(entry.now.hits.hits[0]._source.ts).toSeconds()) };
             upsertMetric(result, metric);
         });
 
