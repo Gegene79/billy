@@ -175,7 +175,7 @@ router.get('/sensor/current', function(req, res, next) {
         {
             "query": { "match_all": {}},
             "collapse" : { "field" : "name.keyword"},
-            "sort": {"ts": "desc"}
+            "sort": {"receivedAt": "desc"}
        }
     })
     .then((result)=>sendResults(res,result.body.hits.hits))

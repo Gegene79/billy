@@ -89,7 +89,7 @@ function processMetric(metric){
     })
     .then(
         (result) => {
-            debug('Saved metric in ' + process.env.EL_METRIC_INDEX + '\nResult: %O',result);
+            debug('Saved metric in ' + process.env.EL_METRIC_INDEX);
         })
     .catch((err)=>{
         console.error("Imposible insertar la metrica: "+JSON.stringify(metric)+"\nError: "+err.toString());
