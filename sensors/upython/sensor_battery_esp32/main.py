@@ -114,11 +114,12 @@ def connect():
     WLAN.active(True)
     if not WLAN.isconnected():
         print('Connecting to network')
+        WLAN.ifconfig(('192.168.1.100', '255.255.255.0', '192.168.1.1', '8.8.8.8'))
         WLAN.connect(SECRETS['wifi']['essid'], SECRETS['wifi']['pass'])
         intent = 0
         while not WLAN.isconnected():
             print(".", end="")
-            utime.sleep_ms(1000)
+            utime.sleep_ms(200)
             intent = intent + 1
             if intent > 10:
                 return False

@@ -52,6 +52,7 @@ gc.collect()
 #    -----------------------------------------------
 
 SLEEP_TIME_1 = 10  # 10 seconds
+SLEEP_TIME_2 = 5  # 10 seconds
 UNIX_TS_CONVERT = 946684800  # necessary to convert 'epoch since 01-01-2000' to 'epoch since 01-01-1970'
 SCL_PIN = 4  # D2
 SDA_PIN = 0  # D3
@@ -131,9 +132,12 @@ def main():
 
             disconnect()
 
-        for i in range(15):
+        for i in range(6):
             if not isnan(temp):
                 update_main_area("{:.1f}ºC".format(temp))
+            if not isnan(hum):
+                update_bottom_area("{:.1f}%      ".format(hum))
+                utime.sleep(SLEEP_TIME_2)
             if 'temp' in t:
                 update_bottom_area("ext:  {:.1f}ºC ".format(t['temp']))
             utime.sleep(SLEEP_TIME_1)
