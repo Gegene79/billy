@@ -62,6 +62,7 @@ services:
     volumes:
       - /mnt/sdd/images/:/home/jovyan/images/:ro
       - /home/fabien/python-data:/home/jovyan/data/
+      - /mnt/sdb/thumbs/:/home/jovyan/thumbnails/
     networks: 
      - billy-network
 

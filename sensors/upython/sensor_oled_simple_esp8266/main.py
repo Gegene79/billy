@@ -98,7 +98,7 @@ def main():
             hum = DHT.humidity()
 
         except Exception as e:
-            blink_led1()
+            #blink_led1()
             print("Error in main loop: {}".format(str(e)))
 
         if not isnan(temp) and not isnan(hum):
@@ -123,11 +123,11 @@ def main():
                         try:
                             t = ext_temp()
                         except Exception as e:
-                            blink_led1(iterations=2)
+                            # blink_led1(iterations=2)
                             print("Error while getting ext temperature: {}".format(str(e)))
 
             except Exception as e:
-                blink_led1(iterations=3)
+                # blink_led1(iterations=3)
                 print("Error while connecting and sending message: {}".format(str(e)))
 
             disconnect()
