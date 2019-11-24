@@ -1,9 +1,9 @@
 FROM node:12-slim
-RUN mkdir /app
+RUN mkdir -p /app/node_modules && chown -R node:node /app
 WORKDIR /app
 COPY ./src/package.json ./
+USER node
 RUN npm install
-COPY ./src ./
-RUN ls -lah
+COPY --chown=node:node ./src ./
 EXPOSE 3000
 CMD npm start
