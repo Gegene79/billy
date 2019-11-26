@@ -12,7 +12,7 @@ pipeline {
         stage('Preparar'){
             steps {
                 script {
-                    prop = readProperties file: '${env.CONF_PATH}/conf/petitbilly.conf'
+                    prop = readProperties file: ${env.CONF_PATH}'/conf/petitbilly.conf'
                     echo "Ejecutando build ${JOB_NAME} # ${BUILD_NUMBER} and deploy on ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_PORT}"
                 }
             }
