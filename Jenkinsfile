@@ -4,8 +4,6 @@ pipeline {
 
     environment {
         PACKAGE_NAME = "package_${BUILD_ID}.tar.gz"
-        TARGET_PATH = "/mnt/sdb/billy"
-        TARGET_HOST = "jenkins@petitbilly"
         ENV_PATH = "/home/fabien/billy"
         TEMP_PATH = "/home/jenkins"
         ENV_STORE = "${env.TARGET_HOST}:${env.ENV_PATH}"
@@ -14,21 +12,21 @@ pipeline {
 
     stages {
 
-        /*
-        stage('Test') {
+        stage('Preparar'){
             steps {
-                echo 'Retreive test environment file'
-                sh "scp -BCp -P 979 ${env.ENV_STORE}/node_petitbilly_test.env ${WORKSPACE}/.env"
-                echo 'Install modules'
-                sh 'npm install'
-                echo 'Launch app'
-                sh 'npm start &'
-                sleep 5
-                echo 'Launch test'
-                sh 'npm test'
+                script {
+                    prop = readProperties file: '${env.TEMP_PATH}/conf/petitbilly.conf'
+                    echo "Ejecutando build ${JOB_NAME} # ${BUILD_NUMBER} and deploy on ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_PORT}"
+                /*
+                TARGET_USER=jenkins
+                TARGET_HOST=petitbilly
+                TARGET_PORT=979
+                TARGET_ENV=/home/fabien/billy/env/.env
+                TARGET_PATH=/mnt/sdb/billy/
+                */
+                }
             }
         }
-        */
         stage('Empaquetar') {
             /*    
             when {
@@ -37,7 +35,7 @@ pipeline {
             */
             steps {
                 echo "Retrieve production env file"
-                sh "scp -BCp -P 979 ${env.TARGET_HOST}:${env.ENV_PATH}/node_billy_pro.env ./node/src/.env \
+                sh "scp -BCp -P ${prop.TARGET_PORT} ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_ENV} ./node/src/.env \
                     && chmod 640 ./node/src/.env"
                 echo "Package ${env.PACKAGE_NAME}"
                 sh "ls -lah && tar --exclude=node_modules -czvf ${env.PACKAGE_NAME} *"
@@ -52,8 +50,8 @@ pipeline {
             */
             steps {
                 
-                echo "Sending package to ${env.TARGET_HOST}"
-                sh "scp -BCp -P 979 ${env.PACKAGE_NAME} ${env.TARGET_HOST}:${env.TEMP_PATH}/"
+                echo "Sending package to ${prop.TARGET_HOST}"
+                sh "scp -BCp -P ${prop.TARGET_PORT} ${env.PACKAGE_NAME} ${env.TARGET_HOST}:${env.TEMP_PATH}/"
 
                 echo "Deflate ${env.TEMP_PATH}/${env.PACKAGE_NAME}"
                 sh "ssh -p 979 ${env.TARGET_HOST} \"mkdir ${env.SW_PATH} && \
