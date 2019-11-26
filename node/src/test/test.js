@@ -3,7 +3,7 @@ var expect  = require("chai").expect;
 var request = require("request");
 require('dotenv').config();
 
-let url1 = "http://localhost:"+process.env.PORT+"/api/prueba_type/prueba_name";
+let url1 = "http://localhost:"+process.env.NODE_PORT+"/api/prueba_type/prueba_name";
 let value1 = 20+Math.random()*10;
 
 
@@ -44,7 +44,7 @@ let value1 = 20+Math.random()*10;
         });
     });
 
-    let url2 = "http://localhost:"+process.env.PORT+"/api/monitor/prueba_type/prueba_name";
+    let url2 = "http://localhost:"+process.env.NODE_PORT+"/api/monitor/prueba_type/prueba_name";
     let value2 = value1+0.001;
 
     describe("insert 2nd metric with value "+value2+" using new url", function() {
@@ -70,7 +70,7 @@ let value1 = 20+Math.random()*10;
         
     });
        
-    let url3 = "http://localhost:"+process.env.PORT+"/api/monitor/prueba_type/prueba_name";
+    let url3 = "http://localhost:"+process.env.NODE_PORT+"/api/monitor/prueba_type/prueba_name";
     let value3 = value1+10.0;
 
     describe("try to insert 3rd metric with value "+value3, function() {
@@ -113,7 +113,7 @@ let value1 = 20+Math.random()*10;
         });
     });
 
-    let url4 = "http://localhost:"+process.env.PORT+"/api/monitor/prueba_type/prueba_name_2";
+    let url4 = "http://localhost:"+process.env.NODE_PORT+"/api/monitor/prueba_type/prueba_name_2";
     let value4 = value1+1.01;
 
     describe("Insert other metric prueba2 with value "+value4, function() {
@@ -163,7 +163,7 @@ let value1 = 20+Math.random()*10;
         });
     });
 
-    let url5 = "http://localhost:"+process.env.PORT+"/api/monitor/prueba_type";
+    let url5 = "http://localhost:"+process.env.NODE_PORT+"/api/monitor/prueba_type";
     
     describe("retrieve most recent metrics data", function() {
         it("returns the most recent values from the 2 metrics", function(done) {
