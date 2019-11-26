@@ -25,7 +25,7 @@ app.use(logger(process.env.NODE_ENV)); // en express: 'dev'
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cors()); // añadimos CORS
-app.use(cookieParser(process.env.SECRET)); //  modificado para descodificar las signed-cookies
+app.use(cookieParser(process.env.NODE_SECRET)); //  modificado para descodificar las signed-cookies
 
 
 // APIs sin authentication

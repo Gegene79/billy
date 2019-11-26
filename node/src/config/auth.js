@@ -87,13 +87,13 @@ exports.insertNewUser = async (user) => {
 
 exports.required = 
   jwt({
-    secret: process.env.SECRET,
+    secret: process.env.NODE_SECRET,
     getToken: getToken,
   });
 
 exports.optional = 
   jwt({
-    secret: process.env.SECRET,
+    secret: process.env.NODE_SECRET,
     getToken: getToken,
     credentialsRequired: false
     });
@@ -110,7 +110,7 @@ exports.generateJWT = function(email) {
     audience: "everyone",
     email: email,
     profile: "admin"
-  }, process.env.SECRET);
+  }, process.env.NODE_SECRET);
 };
 
 
