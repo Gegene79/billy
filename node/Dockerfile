@@ -5,5 +5,4 @@ COPY ./src/package.json ./
 USER node
 RUN npm install
 COPY --chown=node:node ./src ./
-EXPOSE 3000
 CMD npm start
