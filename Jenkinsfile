@@ -12,7 +12,7 @@ pipeline {
         stage('Preparar'){
             steps {
                 script {
-                    prop = readProperties file: ${env.CONF_PATH}'/conf/petitbilly.conf'
+                    prop = readProperties file: "${env.CONF_PATH}/conf/petitbilly.conf"
                     echo "Ejecutando build ${JOB_NAME} # ${BUILD_NUMBER} and deploy on ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_PORT}"
                 }
             }
@@ -22,7 +22,7 @@ pipeline {
             when {
                 branch 'master'
             }
-            */
+            */  
             steps {
                 echo "Retrieve production env file"
                 sh "scp -BCp -P ${prop.TARGET_PORT} ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_ENV} ./.env \
@@ -50,7 +50,7 @@ pipeline {
                 echo "Deflate ${prop.TARGET_PATH}/${env.PACKAGE_NAME} and Build"
                 sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"rm -rf ${prop.TARGET_PATH}/current/* && \
                     tar -xzvf ${prop.TARGET_PATH}/${env.PACKAGE_NAME} -C ${prop.TARGET_PATH}/current \
-                    && cd ${prop.TARGET_PATH} \
+                    && cd ${prop.TARGET_PATH}/current \
                     && chown -R ${prop.TARGET_USER}:${prop.TARGET_GROUP} * && chmod -R 750 * \
                     && sudo docker-compose build \""
                 
