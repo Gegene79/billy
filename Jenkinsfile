@@ -52,7 +52,7 @@ pipeline {
                     tar -xzvf ${prop.TARGET_PATH}/${env.PACKAGE_NAME} -C ${prop.TARGET_PATH}/current \
                     && cd ${prop.TARGET_PATH}/current \
                     && chown -R ${prop.TARGET_USER}:${prop.TARGET_GROUP} * && chmod -R 750 * \
-                    && cp ./petitbilly.env ./node/.env \
+                    && cp ./petitbilly.env ./node/src/.env \
                     && sudo docker-compose build \""
                 
                 echo "Restart Dockers"
