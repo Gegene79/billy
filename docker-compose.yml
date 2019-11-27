@@ -58,11 +58,11 @@ services:
     depends_on:
      - elastic
     ports:
-     - 984:8888
+     - "${JUPYTER_PORT}:8888"
     volumes:
-      - ${IMAGE_DATA}:/images/:ro
-      - ${JUPYTER_DATA}:/home/jovyan/
-      - ${THUMB_DATA}:/thumbnails/
+      - images:/images/:ro
+      - jupyter:/home/jovyan/
+      - thumbs:/thumbnails/
     networks: 
      - billy-network
 
@@ -71,8 +71,33 @@ networks:
     name: billy-network
 
 volumes:
-  - images: ${IMAGE_DATA}:ro
-  - thumbs: ${THUMB_DATA}
-  - elastic: ${EL_DATA}
-  - mqtt: ${MQ_DATA}
-  - jupyter: ${JUPYTER_DATA}
+  images: 
+    driver: local
+    driver_ops: 
+      type: 'none'
+      o: 'bind'
+      device: '${IMAGE_DATA}'
+  thumbs: 
+    driver: local
+    driver_ops: 
+      type: 'none'
+      o: 'bind'
+      device: '${THUMB_DATA}'
+  elastic: 
+    driver: local
+    driver_ops: 
+      type: 'none'
+      o: 'bind'
+      device: '${EL_DATA}'
+  mqtt:
+    driver: local
+    driver_ops: 
+      type: 'none'
+      o: 'bind'
+      device: '${MQ_DATA}'
+  jupyter: 
+    driver: local
+    driver_ops: 
+      type: 'none'
+      o: 'bind'
+      device: '${JUPYTER_DATA}'
