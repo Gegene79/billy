@@ -73,31 +73,31 @@ networks:
 volumes:
   images: 
     driver: local
-    driver_ops: 
-      type: 'none'
-      o: 'bind'
-      device: '${IMAGE_DATA}'
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${IMAGE_DATA}"
   thumbs: 
     driver: local
-    driver_ops: 
-      type: 'none'
-      o: 'bind'
-      device: '${THUMB_DATA}'
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${THUMB_DATA}"
   elastic: 
     driver: local
-    driver_ops: 
-      type: 'none'
-      o: 'bind'
-      device: '${EL_DATA}'
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${EL_DATA}"
   mqtt:
     driver: local
-    driver_ops: 
-      type: 'none'
-      o: 'bind'
-      device: '${MQ_DATA}'
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${MQ_DATA}"
   jupyter: 
     driver: local
-    driver_ops: 
-      type: 'none'
-      o: 'bind'
-      device: '${JUPYTER_DATA}'
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${JUPYTER_DATA}"
