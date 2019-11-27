@@ -28,7 +28,7 @@ pipeline {
                 sh "scp -BCp -P ${prop.TARGET_PORT} ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_ENV} ./petitbilly.env \
                     && chmod 640 ./petitbilly.env"
                 echo "Package ${env.PACKAGE_NAME}"
-                sh "ls -lah && tar --exclude=node_modules -czvf ${env.PACKAGE_NAME} ."
+                sh "ls -lah && tar --exclude=node_modules -czvf ${env.PACKAGE_NAME} *"
             }
         }
 
