@@ -26,7 +26,7 @@ pipeline {
             steps {
                 echo "Retrieve production env file"
                 sh "scp -BCp -P ${prop.TARGET_PORT} ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_ENV} ./petitbilly.env \
-                    && chmod 640 ./petitbilly.env"
+                    && chmod 750 ./petitbilly.env && cat ./petitbilly.env"
                 echo "Package ${env.PACKAGE_NAME}"
                 sh "ls -lah && tar --exclude=node_modules -czvf ${env.PACKAGE_NAME} *"
             }
