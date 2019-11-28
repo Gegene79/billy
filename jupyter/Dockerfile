@@ -3,7 +3,7 @@ FROM jupyter/tensorflow-notebook
 USER root
 RUN locale-gen es_ES
 RUN dpkg-reconfigure locales
-RUN mkdir /images && mkdir data && mkdir /thumbnails
+RUN mkdir /images && mkdir /thumbnails
 RUN chown -R jovyan:users /images /thumbnails /home/jovyan
 USER jovyan:users
 RUN pip install elasticsearch oauth2client httplib2 google-auth pillow google_auth_oauthlib

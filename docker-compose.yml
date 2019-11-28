@@ -50,6 +50,28 @@ services:
     networks:
      - billy-network
 
+  nginx:
+    image: billy-nginx
+    container_name: billy-nginx
+    build: ./nginx/
+    restart: always
+    depends_on:
+      - mqtt
+      - elastic
+      - node
+    ports:
+      - "80:80"
+      - "433:433"
+    volumes:
+      - images:/images/:ro
+      - thumbs:/thumbnails/:ro
+    environment:
+      - NODE_HOST=${NODE_HOST}
+      - IMAGE_DATA=${IMAGE_DATA}
+      - THUMB_DATA=${THUMB_DATA}
+    networks:
+     - billy-network
+  
   jupyter:
     image: billy-jupyter
     container_name: billy-jupyter
