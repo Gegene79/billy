@@ -26,7 +26,7 @@ pipeline {
             steps {
                 echo "Retrieve production env file"
                 sh "scp -BCp -P ${prop.TARGET_PORT} ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_ENV} ./petitbilly.env \
-                    && chmod 750 ./petitbilly.env && cat ./petitbilly.env"
+                    && chmod 750 ./petitbilly.env"
                 echo "Package ${env.PACKAGE_NAME}"
                 sh "ls -lah && tar --exclude=node_modules -czvf ${env.PACKAGE_NAME} *"
             }
@@ -52,7 +52,7 @@ pipeline {
                     tar -xzvf ${prop.TARGET_PATH}/${env.PACKAGE_NAME} -C ${prop.TARGET_PATH}/current \
                     && cd ${prop.TARGET_PATH}/current \
                     && chown -R ${prop.TARGET_USER}:${prop.TARGET_GROUP} * && chmod -R 750 * \
-                    && cp ./petitbilly.env ./node/src/.env \
+                    && cp ./petitbilly.env ./node/src/.env && mv ./petitbilly.env ./.env \
                     && sudo docker-compose build \""
                 
                 echo "Restart Dockers"
