@@ -44,7 +44,7 @@ pipeline {
                 sh "scp -BCp -P ${prop.TARGET_PORT} ${env.PACKAGE_NAME} ${prop.TARGET_HOST}:${prop.TARGET_PATH}/"
 
                 echo "Stop Dockers"
-                sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"cd ${prop.TARGET_PATH} \
+                sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"cd ${prop.TARGET_PATH}/current \
                         && sudo docker-compose down \""
 
                 echo "Deflate ${prop.TARGET_PATH}/${env.PACKAGE_NAME} and Build"
@@ -56,7 +56,7 @@ pipeline {
                     && sudo docker-compose build \""
                 
                 echo "Restart Dockers"
-                sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"cd ${prop.TARGET_PATH} \
+                sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"cd ${prop.TARGET_PATH}/current \
                         && sudo docker-compose up -d\""
                 
                 echo "Tidy up workspace"
