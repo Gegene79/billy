@@ -4,19 +4,6 @@
 
 version: "3.5"
 services:
-  mongo:
-    # -p 27017:27017 --name billy-mongo -v /mnt/sda/data/mongo/:/data/db billy-mongo --auth
-    image: billy-mongo
-    container_name: billy-mongo
-    build: ./mongo/
-    restart: always
-    volumes:
-      - /mnt/sda/data/mongo/:/data/db # in container
-    ports:
-    - "981:27017"
-    networks:
-     - billy-network
-
   elastic:
     image: billy-elastic
     container_name: billy-elastic
@@ -29,10 +16,10 @@ services:
         soft: -1
         hard: -1
     volumes:
-      - /mnt/sda/data/elastic/:/usr/share/elasticsearch/data
+      - elastic:/usr/share/elasticsearch/data
     ports:
-      - "982:9200"
-      - "983:9300"
+      - "${EL_PORT1}:9200"
+      - "${EL_PORT2}:9300"
     networks: 
      - billy-network
 
@@ -43,9 +30,9 @@ services:
     build: ./mqtt/
     restart: always
     volumes:
-      - /docker/mqtt/config/:/mosquitto/conf/
+      - /home/fabien/mqtt-data/:/mosquitto/data/
     ports:
-    - "980:1883"
+    - "${MQ_PORT}:1883"
     networks:
      - billy-network
 
@@ -56,14 +43,83 @@ services:
     build: ./node/
     restart: always
     depends_on:
-      - mongo
       - mqtt
       - elastic
     ports:
-      - "80:3000"
+      - "${NODE_PORT}:3000"
     networks:
+     - billy-network
+
+  nginx:
+    image: billy-nginx
+    container_name: billy-nginx
+    build: ./nginx/
+    restart: always
+    depends_on:
+      - mqtt
+      - elastic
+      - node
+    ports:
+      - "80:80"
+      - "433:433"
+    volumes:
+      - images:/images/:ro
+      - thumbs:/thumbnails/:ro
+    environment:
+      - NODE_HOST=${NODE_HOST}
+      - IMAGE_DATA=${IMAGE_DATA}
+      - THUMB_DATA=${THUMB_DATA}
+    networks:
+     - billy-network
+  
+  jupyter:
+    image: billy-jupyter
+    container_name: billy-jupyter
+    build: ./jupyter
+    restart: always
+    depends_on:
+     - elastic
+    ports:
+     - "${JUPYTER_PORT}:8888"
+    volumes:
+      - images:/images/:ro
+      - jupyter:/home/jovyan/
+      - thumbs:/thumbnails/
+    networks: 
      - billy-network
 
 networks:
   billy-network:
     name: billy-network
+
+volumes:
+  images: 
+    driver: local
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${IMAGE_DATA}"
+  thumbs: 
+    driver: local
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${THUMB_DATA}"
+  elastic: 
+    driver: local
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${EL_DATA}"
+  mqtt:
+    driver: local
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${MQ_DATA}"
+  jupyter: 
+    driver: local
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${JUPYTER_DATA}"

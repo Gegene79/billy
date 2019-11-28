@@ -1,8 +1,9 @@
-'use strict';
+'use strict'
 const express = require('express');
-const router = express.Router();
+var router = express.Router();
+const debug = require('debug')('routes:api:index')
 
 router.use('/users', require('./users'));
-router.use('/monitor', require('./monitorelastic'));
+router.use('/monitor', require('./monitor'));
 
 module.exports = router;

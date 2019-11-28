@@ -1,4 +1,4 @@
-"use strict";
+'use strict'
 var db = require('../../common/db');
 var express = require('express');
 var img = require('../../common/fsdbsync');

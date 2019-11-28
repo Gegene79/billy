@@ -36,6 +36,10 @@ build/Release
 node_modules/
 jspm_packages/
 
+# python pycharm directories
+.idea/
+venv/
+
 # TypeScript v1 declaration files
 typings/
 
@@ -56,9 +60,13 @@ typings/
 
 # dotenv environment variables file
 .env
+env.json
 
 # next.js build output
 .next
 
 # vscode
 .vscode
+
+# local backups
+*_old

@@ -1,0 +1,27 @@
+
+events {}
+http {
+
+    server {
+        listen 80 default_server;
+        server_name petitbilly;
+        root /usr/share/nginx/html;
+        include  /etc/nginx/mime.types;
+        
+        location /api {
+            proxy_pass http://${NODE_HOST}:3000;
+        }
+
+        location /images {
+            root /images;
+        }
+
+        location /thumbnails {
+            root /thumbnails;
+        }
+
+        location / {
+            autoindex on;
+        }
+    }
+}

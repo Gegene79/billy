@@ -1,73 +1,105 @@
-"use strict";
-var Promise = require("bluebird");
+'use strict'
 var express = require('express');
 var router = express.Router();
-var myDate = require('moment');
 var { DateTime } = require('luxon');
-var db = require('../../common/db');
-var ini = new Date();
-var end = new Date();
+var el = require ('../../config/db');
 const min =  60*1000;
 const hour = 60*min;
-var sampling;
-var mbuffer = new Map();
-const MAXDEV = new Map([["temperature", 5 / 60000],      // temperature => 5ºC per minute
-                        ["humidity",    10 / 60000],     // humidity => 10% per minute
-                        ["prueba_type", 10 / 60000]]);   // for testing purpose   
-
-
 
 /*** Utility functions ***/
 
-function transform(docs){
+function upsertMetric(array, metric){
+    let i = array.findIndex(m => (m.name==metric.name && m.type==metric.type));
+    if ( i == -1)
+        array.push(metric);
+    else 
+        Object.assign(array[i],metric);
+}
+
+function transform_query(docs){
 
     return new Promise(function(resolve,reject){
 
         var result = [];
-        docs.forEach(function(entry){
-            if (!((entry.avg == null) || (entry.avg == NaN))){
+        
+        docs.body.aggregations.min_max.buckets.forEach((entry) => {
+            let min_metric = { name: entry.key, 
+                type: entry.min.hits.hits[0]._source.type, 
+                min: Math.round(entry.min.hits.hits[0]._source.value*10)/10,
+                min_ts: entry.min.hits.hits[0]._source.ts };
+            upsertMetric(result, min_metric);
 
-                var datapoint = { x: entry._id.timestamp, y: Math.round(entry.avg*10)/10 };
-                var exist_metric = result.find(function(a) {
-                        return (a.key == entry._id.name);
-                    });
+            let max_metric = { name: entry.key, 
+                type: entry.max.hits.hits[0]._source.type, 
+                max: Math.round(entry.max.hits.hits[0]._source.value*10)/10,
+                max_ts: entry.max.hits.hits[0]._source.ts };
+            upsertMetric(result, max_metric);
+        });
 
-                if (exist_metric){ // la metrica con nombre _id.name ya esta en result, solo hay que añadir el datapoint
-                    exist_metric.values.push(datapoint);
-                } else { // la metrica no esta en result, hay que añadirla con su primer datapoint
-                    var metric = {key : entry._id.name, values: [datapoint] };
-                    result.push(metric);
-                }
-            }
+        docs.body.aggregations.last_day.now_yesterday.buckets.forEach((entry) => {
+            let d1_metric = { name: entry.key, 
+                type: entry.yesterday.hits.hits[0]._source.type, 
+                d1_value: Math.round(entry.yesterday.hits.hits[0]._source.value*10)/10,
+                d1_ts: entry.yesterday.hits.hits[0]._source.ts };
+            upsertMetric(result, d1_metric);
+
+            let metric = { name: entry.key, 
+                type: entry.now.hits.hits[0]._source.type, 
+                value: Math.round(entry.now.hits.hits[0]._source.value*10)/10,
+                ts: entry.now.hits.hits[0]._source.ts,
+                timestamp: Math.round(DateTime.fromISO(entry.now.hits.hits[0]._source.ts).toSeconds()) };
+            upsertMetric(result, metric);
         });
 
         return resolve(result);
     });
 };
 
-function sendresult(res,result){
-    res.contentType('application/json');
-    res.status(200).json(result);
+function transform_agg(docs){
+
+    return new Promise(function(resolve,reject){
+
+        var result = [];
+        docs.body.aggregations.nombres.buckets.forEach(function(entry){
+            
+            entry.cada_30mins.buckets.forEach((val)=>{
+                if (val.doc_count >0) {
+                    let datapoint = { x: val.key_as_string, y: Math.round(val.avg_temp.value*10)/10 };
+                    
+                    let exist_metric = result.find((a)=> {
+                        return (a.key == entry.key);
+                    });
+                    if (exist_metric)
+                        exist_metric.values.push(datapoint);
+                    else 
+                        result.push({key: entry.key, values: [datapoint]});
+                }
+            });
+        });
+
+        return resolve(result);
+    });
 };
 
-/*** Defaults parameters ***/
+function sendResults(res, result){
+    res.contentType('application/json');
+    res.status(200).json(result);
+}
 
+/*** set defaults parameters ***/
 router.use(function (req, res, next) {
 
-    ini = DateTime.local().plus({days:-7}).set({hour:0, minute:0, second:0}).toJSDate();
-    ini1 = myDate().subtract(7,'days').startOf('day').toDate();      // default: since one week
-    end1 = myDate().toDate();                                        // default: up to now
-    end = DateTime.local();
-    sampling = 5*min;                                               // default: values are averaged on 5 mins intervals
-
     if (req.query.ini){
-        ini = myDate(req.query.ini).toDate();
-    } 
-    if (req.query.end){
-        end = myDate(req.query.end).toDate();
+        //ini = DateTime.fromString(req.query.ini,'yyyy-MM-ddTHH:mm:ss.SSS').toJSDate();
+        req.query.ini = DateTime.fromSeconds(Number(req.query.ini));
+    } else {
+        req.query.ini = DateTime.local().minus({days:7}).startOf('day');
     }
-    if (req.query.sampling){
-        sampling = req.query.sampling*min;
+
+    if (req.query.end){
+        req.query.end = DateTime.fromSeconds(Number(req.query.end));
+    } else {
+        req.query.end = DateTime.local();
     }
 
     next();
@@ -75,69 +107,300 @@ router.use(function (req, res, next) {
 
 
 // get historical values for all metrics
-router.get('/', function(req, res, next) {
-    
-    db.getMetrics(ini,end,sampling)
-    .then(transform)
-    .then(function(result){sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });
+router.get('/', function(req, res, next) { // in fact /api
+
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: {
+                "aggs": {
+                    "group": {
+                        "terms": {
+                            "field": "name"
+                        },
+                        "aggs": {
+                            "group_docs": {
+                                "top_hits": {
+                                    "size": 1,
+                                    "sort": [
+                                        {
+                                            "ts": {
+                                                "order": "desc"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+    })
+    .then(transform_query)
+    .then((result)=>sendResults(res,result))
+    .catch((error) => next(error));
 });
 
 // get current values for all metrics
 router.get('/current', function(req, res, next) {
     
-    db.getCurrentValues(ini)
-    .then(function(result){sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: 
+        {
+            "query": {
+                "match": {
+                    "type": "temperature"
+                }
+            },
+            "collapse" : {
+                "field" : "name.keyword" 
+            },
+            "sort": {"ts": "desc"}
+        }
+    })
+    .then(transform_query)
+    .then((result)=>sendResults(res,result))
+    .catch((error) => next(error));
 });
 
+// get current status for all sensors
+router.get('/sensor/current', function(req, res, next) {
+    
+    el.client.search({
+        index: 'sensors',
+        type: '_doc',
+        body: 
+        {
+            "query": { "match_all": {}},
+            "collapse" : { "field" : "name.keyword"},
+            "sort": {"receivedAt": "desc"}
+       }
+    })
+    .then((result)=>sendResults(res,result.body.hits.hits))
+    .catch((error) => next(error));
+});
 
 // get historical values for all metrics of some type
 router.get('/:type', function(req, res, next) {
+    //  
+    var obj = {
+        "size": 0,
+        "query": {
+            "bool": {
+               "filter": [ 
+                   { "term":  { "type": req.params.type } },
+                   { "range": { "ts": { "gte" : req.query.ini.toMillis(), "lt" :  req.query.end.toMillis()} } }
+                   ]
+            }
+       },
+       "aggs" : {
+           "nombres" : {
+               "terms" : { "field" : "name.keyword" },
+               "aggs" : {
+                   "cada_30mins": {
+                       "date_histogram": {
+                           "field": "ts",
+                           "interval": "30m"
+                       }
+                       ,
+                       "aggs": {
+                           "avg_temp": { "avg" : { "field" : "value" } }
+                       }
+                   },
+                    "max_temp": { "max" : { "field" : "value" } },
+                    "min_temp": { "min" : { "field" : "value" } }
+               }
+           }
+       }
+   };
 
-    db.getMetricsByType(req.params.type,ini,end,sampling)
-    .then(transform)
-    .then(function(result){sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });  
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: obj
+    })
+    .then(transform_agg)
+    .then((result)=>{sendResults(res,result);})
+    .catch((error) => next(error));  
 });
+
 
 // get current values of all metrics of some type
 router.get('/:type/current', function(req, res, next) {
 
-    db.getCurrentValueByType(req.params.type,ini)
-    .then(function(result){sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: 
+        {
+            "size": 0,
+            "query": {
+                "bool": {
+                   "filter": [ 
+                       { "term":  { "type": req.params.type } }, 
+                       { "range": { "ts": { "gte" : req.query.ini.toMillis(), "lt" :  req.query.end.toMillis()} } } 
+                       ]
+                }
+           },
+           "aggs" : {
+               "min_max" : {
+                   "terms" : { "field" : "name.keyword" },
+                   "aggs" : {
+                       "min": {
+                           "top_hits": {
+                               "size": 1,
+                               "sort": [{"value": {"order": "asc"}}]
+                           }
+                       },
+                       "max": {
+                           "top_hits": {
+                               "size": 1,
+                               "sort": [{"value": {"order": "desc"}}]
+                           }
+                       }
+                   }
+               },
+               "last_day":{
+                   "filter": { "range": { "ts": { "gte" : "now-1d", "lt" :  "now"} } },
+                   "aggs": {
+                       "now_yesterday": {
+                           "terms" : { "field" : "name.keyword"},
+                           "aggs": {
+                               "now": {
+                                   "top_hits": {
+                                       "size": 1,
+                                       "sort": [{"ts": {"order": "desc"} }]
+                                   }
+                               },
+                               "yesterday": {
+                                   "top_hits": {
+                                       "size": 1,
+                                       "sort": [{"ts": {"order": "asc"} }]
+                                   }
+                               }
+                           }
+                       }
+                   }
+               }
+           }
+       }
+    })
+    .then(transform_query)
+    .then((result)=>{console.log(JSON.stringify(result));sendResults(res,result);})
+    .catch((error) => next(error));
 });
 
-// get historical values for a type and a name
+// get historical values for one metrics of some type
 router.get('/:type/:name', function(req, res, next) {
-    
-    db.getMetricsByTypeAndName(req.params.type,req.params.name,ini,end,sampling)
-    .then(transform)
-    .then(function(result){sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });  
+    //  
+    var obj = {
+        "size": 0,
+        "query": {
+            "bool": {
+               "filter": [ 
+                   { "term":  { "type": req.params.type } },
+                   { "term":  { "name": req.params.name } },
+                   { "range": { "ts": { "gte" : req.query.ini.toMillis(), "lt" :  req.query.end.toMillis()} } }
+                   ]
+            }
+       },
+       "aggs" : {
+           "nombres" : {
+               "terms" : { "field" : "name.keyword" },
+               "aggs" : {
+                   "cada_30mins": {
+                       "date_histogram": {
+                           "field": "ts",
+                           "interval": "30m"
+                       }
+                       ,
+                       "aggs": {
+                           "avg_temp": { "avg" : { "field" : "value" } }
+                       }
+                   },
+                    "max_temp": { "max" : { "field" : "value" } },
+                    "min_temp": { "min" : { "field" : "value" } }
+               }
+           }
+       }
+   };
+   
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: obj
+    })
+    .then(transform_agg)
+    .then((result)=>{sendResults(res,result);})
+    .catch((error) => next(error));  
 });
 
-// get current value for a type and a name
+// get current values of all metrics of some type
 router.get('/:type/:name/current', function(req, res, next) {
 
-    db.getCurrentValueByTypeAndName(req.params.type,req.params.name,ini)
-    .then(function(result){
-        sendresult(res,result);
+    el.client.search({
+        index: 'metrics',
+        type: '_doc',
+        body: 
+        {
+            "size": 0,
+            "query": {
+                "bool": {
+                   "filter": [ 
+                       { "term":  { "type": req.params.type } }, 
+                       { "term":  { "name": req.params.name } },
+                       { "range": { "ts": { "gte" : req.query.ini.toMillis(), "lt" :  req.query.end.toMillis()} } } 
+                       ]
+                }
+           },
+           "aggs" : {
+               "min_max" : {
+                   "terms" : { "field" : "name.keyword" },
+                   "aggs" : {
+                       "min": {
+                           "top_hits": {
+                               "size": 1,
+                               "sort": [{"value": {"order": "asc"}}]
+                           }
+                       },
+                       "max": {
+                           "top_hits": {
+                               "size": 1,
+                               "sort": [{"value": {"order": "desc"}}]
+                           }
+                       }
+                   }
+               },
+               "last_day":{
+                   "filter": { "range": { "ts": { "gte" : "now-1d", "lt" :  "now"} } },
+                   "aggs": {
+                       "now_yesterday": {
+                           "terms" : { "field" : "name.keyword"},
+                           "aggs": {
+                               "now": {
+                                   "top_hits": {
+                                       "size": 1,
+                                       "sort": [{"ts": {"order": "desc"} }]
+                                   }
+                               },
+                               "yesterday": {
+                                   "top_hits": {
+                                       "size": 1,
+                                       "sort": [{"ts": {"order": "asc"} }]
+                                   }
+                               }
+                           }
+                       }
+                   }
+               }
+           }
+       }
     })
-    .catch(function(error){
-        next(error);
-    });
+    .then(transform_query)
+    .then((result)=>{console.log(JSON.stringify(result));sendResults(res,result);})
+    .catch((error) => next(error));
 });
 
 // insert metric
@@ -148,32 +411,10 @@ router.post('/:type/:name', function(req,res,next){
     metric.name = req.params.name;
     metric.type = req.params.type;
 
-    var key = metric.type+"."+metric.name;
     
-    if (!(metric.period)) {
-        metric.period = 'm';
-    }
-    if (!(metric.timestamp)){
-        metric.timestamp = new Date();
-    }
     
-    if (mbuffer.has(key)) {
-        let valuediff = Math.abs(metric.value - mbuffer.get(key).value);
-        let timediff = Math.abs(metric.timestamp.getTime() - mbuffer.get(key).timestamp.getTime());
-        let limit = MAXDEV.get(metric.type);
-
-        if ( (valuediff / timediff) > MAXDEV.get(metric.type) ){ 
-            // too much metric change for elapsed time... do not insert data.
-            return next(new Error("Erroneous value, difference of "+valuediff.toFixed(1)+" units in "+(timediff/1000).toFixed(0)+"seconds."));           
-        }
-    }
-    mbuffer.set(key,metric); // add or replace in Map.
-
-    db.insertMetric(metric)
-    .then(function(result){sendresult(res,result);})
-    .catch(function(error){
-        next(error);
-    });
 });
+
+
 
 module.exports = router;

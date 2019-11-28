@@ -1,96 +1,63 @@
 'use strict';
-const express = require('express');
-const path = require('path');
-const env = require('dotenv').config();
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
-const mongoose = require('mongoose');
-const errorHandler = require('errorhandler');
-const cors = require('cors');
-var session = require('express-session');
-const flash = require('connect-flash');
+// express por defecto
+var express = require('express');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var logger = require('morgan');
+// dependencias añadidas
 const e = require('./config/error');
-const debug = require('debug');
+const cors = require('cors');
+const env = require('dotenv').config();
+const auth = require('./config/auth');
+const debug = require('debug')('main');
 //Configure isProduction variable
 const isProduction = (process.env.NODE_ENV === 'production');
 
-// initiate app
-const app = express();
+// express rutas por defecto
+var usersRouter = require('./routes/users');
+var apiRouter = require('./routes/api/index');
 
-//Configure our app
-app.use(logger('dev'));
+// declaración por defecto de app Express
+var app = express();
+
+// express por defecto
+app.use(logger(process.env.NODE_ENV)); // en express: 'dev'
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser(process.env.SECRET));
-app.use(session({cookie: { maxAge: 60000 }}));
-app.use(flash());
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(cors());
+app.use(cors()); // añadimos CORS
+app.use(cookieParser(process.env.NODE_SECRET)); //  modificado para descodificar las signed-cookies
 
-if(!isProduction) {
-  app.use(errorHandler());
-  
-}
 
-//Configure Mongoose
-const options = {
-  user: process.env.DB_USER,
-  pass: process.env.DB_PASS,
-  useNewUrlParser: true,
-  useCreateIndex: false,
-  useFindAndModify: false,
-  autoIndex: false, // Don't build indexes
-  reconnectTries: Number.MAX_VALUE, // Never stop trying to reconnect
-  reconnectInterval: 1000, // Reconnect every 1000ms
-  poolSize: 10, // Maintain up to 10 socket connections
-  // If not connected, return errors immediately rather than waiting for reconnect
-  bufferMaxEntries: 0,
-  connectTimeoutMS: 10000, // Give up initial connection after 10 seconds
-  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-  family: 4 // Use IPv4, skip trying IPv6
-};
+// APIs sin authentication
+app.use('/users', usersRouter);
 
-mongoose.promise = global.Promise;
-mongoose.connect(process.env.DB_URL, options);
-mongoose.set('debug', !isProduction);
+// redirige hacia las apis con authentication
+app.use('/api', auth.required.unless({path:['/api/users/signup','/api/users/login']}), apiRouter);
 
-// Modelos
-require('./models/users');
-require('./models/metrics');
+// protect all other assets unless index.html
+app.use('/main.html', auth.required, (req,res,next) => next());
 
-// declare routes
-app.use(require('./routes'));
-app.use(express.static('public'));
-app.use('/js',express.static((__dirname + '/js')));
+// rutas por defecto Express
+app.use(express.static(path.join(__dirname, 'public'))); //auth.required.unless({path:['/index.html','/login.html']})
+
+// catch API errors, send 500 status and error JSON
+app.use('/api',(err, req, res, next) => {
+    console.error("Caught API error, responding json.\r\nStacktrace: "+err.stacktrace);
+    err.status = err.status || 500;
+    return res.status(err.status).json({error: {message: err.message, stacktrace: err.stacktrace}});
+});
+
+// catch other errors, send 500 status and redirecto to login
+app.use((err, req, res, next) => {
+    console.error("Caught error, redirecting to login.\r\nStacktrace: "+err.stacktrace);
+    err.status = err.status || 500;
+    if (err.constructor.name == "CredentialsError" || err.constructor.name == "UnauthorizedError")
+        return res.status(err.status).redirect('/login.html');
+    return res.status(err.status).redirect('/index.html');
+});
+
+// load mqtt - elastic bridge
 require('./mqtt/mqtt-elastic');
 
-//Error handlers & middlewares
-app.use(function authError(err, req, res, next) {
-  
-  debug(err.constructor.name);
-
-  if (err instanceof e.UnauthorizedError) {
-    // jwt authentication error
-    req.flash('warning', err.message);
-    return res.redirect('/login.html');
-  }
-  next(err);
-});
-
-app.use(function credentialsError(err, req, res, next) {
-  
-  if (err instanceof e.CredentialsError) {
-    // jwt authentication error
-    req.flash('critical', err.message);
-    return res.redirect('/login.html');
-  }
-  next(err);
-});
-
-app.use(function otherError(err, req, res, next) {
-  
-  // default to 500 server error
-  return res.status(500).json({ message: err.message });
-});
-
+// modulo Express por defecto
 module.exports = app;

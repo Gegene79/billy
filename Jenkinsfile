@@ -4,66 +4,63 @@ pipeline {
 
     environment {
         PACKAGE_NAME = "package_${BUILD_ID}.tar.gz"
-        TARGET_PATH = "/mnt/sdb/billy"
-        TARGET_HOST = "fabien@petitbilly"
-        ENV_PATH = "/home/fabien/billy"
-        ENV_STORE = "${env.TARGET_HOST}:${env.ENV_PATH}"
-        SW_PATH = "${env.TARGET_PATH}/dist_${BUILD_ID}"        
+        CONF_PATH = "/home/jenkins"      
     }
 
     stages {
 
-        /*
-        stage('Test') {
+        stage('Preparar'){
             steps {
-                echo 'Retreive test environment file'
-                sh "scp -BCp -P 979 ${env.ENV_STORE}/node_petitbilly_test.env ${WORKSPACE}/.env"
-                echo 'Install modules'
-                sh 'npm install'
-                echo 'Launch app'
-                sh 'npm start &'
-                sleep 5
-                echo 'Launch test'
-                sh 'npm test'
+                script {
+                    prop = readProperties file: "${env.CONF_PATH}/conf/petitbilly.conf"
+                    echo "Ejecutando build ${JOB_NAME} # ${BUILD_NUMBER} and deploy on ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_PORT}"
+                }
             }
         }
-        */
         stage('Empaquetar') {
-
+            /*    
             when {
                 branch 'master'
             }
-
+            */  
             steps {
-                echo "Packaging... ${env.PACKAGE_NAME}"
+                echo "Retrieve production env file"
+                sh "scp -BCp -P ${prop.TARGET_PORT} ${prop.TARGET_USER}@${prop.TARGET_HOST}:${prop.TARGET_ENV} ./petitbilly.env \
+                    && chmod 750 ./petitbilly.env"
+                echo "Package ${env.PACKAGE_NAME}"
                 sh "ls -lah && tar --exclude=node_modules -czvf ${env.PACKAGE_NAME} *"
             }
         }
 
         stage('Deploy') {
-
+            /*
             when {
                 branch 'master'
             }
-            
+            */
             steps {
                 
-                echo "Sending package to ${env.TARGET_HOST}"
-                sh "scp -BCp -P 979 ${env.PACKAGE_NAME} ${env.TARGET_HOST}:${env.TARGET_PATH}/ && rm -f ${env.PACKAGE_NAME}"
-                echo "Deflate ${env.TARGET_PATH}/${env.PACKAGE_NAME}"
-                sh "ssh -l fabien -p 979 petitbilly \"mkdir ${env.SW_PATH} && tar -xzvf ${env.TARGET_PATH}/${env.PACKAGE_NAME} -C ${env.SW_PATH} && rm -f ${env.TARGET_PATH}/${env.PACKAGE_NAME}\""
-                echo "Retrieve production env file and install ${env.TARGET_PATH}/${env.PACKAGE_NAME}"
-                sh "ssh -l fabien -p 979 petitbilly \"cd ${env.SW_PATH} \
-                        && cp ${env.ENV_PATH}/node_billy_pro.env ./.env \
-                        && chmod 640 .env \
-                        && npm install\""
-                echo "Exchange ${env.SW_PATH}/node/src and ${env.TARGET_PATH}/node/src_old"
-                sh "ssh -l fabien -p 979 petitbilly \"cd ${env.SW_PATH} \
-                        && sudo docker-compose stop \
-                        && rm -rf ${env.TARGET_PATH}/node/src_old \
-                        && mv ${env.TARGET_PATH}/node/src ${env.TARGET_PATH}/node/src_old \
-                        && mv ${env.SW_PATH}/node ${env.TARGET_PATH}/node/src \
-                        && sudo docker-compose up \""
+                echo "Sending package to ${prop.TARGET_HOST}"
+                sh "scp -BCp -P ${prop.TARGET_PORT} ${env.PACKAGE_NAME} ${prop.TARGET_HOST}:${prop.TARGET_PATH}/"
+
+                echo "Stop Dockers"
+                sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"cd ${prop.TARGET_PATH}/current \
+                        && sudo docker-compose down \""
+
+                echo "Deflate ${prop.TARGET_PATH}/${env.PACKAGE_NAME} and Build"
+                sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"rm -rf ${prop.TARGET_PATH}/current/* && \
+                    tar -xzvf ${prop.TARGET_PATH}/${env.PACKAGE_NAME} -C ${prop.TARGET_PATH}/current \
+                    && cd ${prop.TARGET_PATH}/current \
+                    && chown -R ${prop.TARGET_USER}:${prop.TARGET_GROUP} * && chmod -R 750 * \
+                    && cp -f ./petitbilly.env ./node/src/.env && mv -f ./petitbilly.env ./.env \
+                    && sudo docker-compose build \""
+                
+                echo "Restart Dockers"
+                sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"cd ${prop.TARGET_PATH}/current \
+                        && sudo docker-compose up -d\""
+                
+                echo "Tidy up workspace"
+                cleanWs()
                 echo "Done."                    
             }
         }

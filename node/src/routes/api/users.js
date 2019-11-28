@@ -1,58 +1,47 @@
-'use strict';
-const mongoose = require('mongoose');
+'use strict'
 const router = require('express').Router();
 const auth = require('../../config/auth');
 const e = require('../../config/error');
-const Users = mongoose.model('users');
 const debug = require('debug');
-const bcrypt = require('bcrypt');
+
 
 //POST new user route (optional, everyone has access)
-router.post('/signup', auth.optional, (req, res, next) => {
-  const { body: { user } } = req;
-  
-  if(!user.email) throw new e.InfoRequiredError("Email necesario.");
-  if(!user.password) throw new e.InfoRequiredError("Contraseña necesaria.");
+router.post('/signup', async (req, res, next) => {
+  try{
+    const { body: { user } } = req;
+    console.log('Signing up new user ' + JSON.stringify(user));
 
-  user._id = user.email;
-  var finalUser = new Users(user);
- 
-  finalUser.save()
-    .then(() => {
-      return res.cookie('jwt', finalUser.generateJWT(), { httpOnly: true, secure: true })
-            .status(200).redirect('/main.html');
-    })
-    .catch((err)=>{
-      debug(err);
-      if (err.code == 11000) 
-        throw new e.EmailAlreadyTakenError();
-      else 
-        next(err);
-    });
+    if(!user.email) throw new e.InfoRequiredError("Email necesario.");
+    if(!user.password) throw new e.InfoRequiredError("Contraseña necesaria.");
+
+    let ok = await auth.insertNewUser(user);
+    
+    if (ok) return res.status(200).json({jwt: auth.generateJWT(user.email)});
+    else throw new e.DatabaseError("No se ha posido dar de alta el usuario.");
+
+  } catch(err) {next(err)}
 });
 
-
 //POST login route (optional, everyone has access)
-router.post('/login', auth.optional, async (req, res, next) => {
-  const user = {
-      'email': req.body.email,
-      'password': req.body.password
-  }; 
-
-  if(!user.email) throw new e.InfoRequiredError("Email necesario.");
-  if(!user.password) throw new e.InfoRequiredError("Contraseña necesaria.");
-
+router.post('/login', async (req, res, next) => {
   try{
-    let usuario = await Users.findOne({ _id: user.email });
-      if (!usuario) throw new e.CredentialsError("Usuario no encontrado");
     
-    let ok = await bcrypt.compare(user.password, usuario.password);
-    
-    if (ok) return res.cookie('jwt', usuario.generateJWT(), { httpOnly: true, secure: true })
-            .status(200).redirect('/main.html'); 
+    if(!req.body.user.email) throw new e.InfoRequiredError("Email necesario.");
+    if(!req.body.user.password) throw new e.InfoRequiredError("Contraseña necesaria.");
+
+    var user = {}
+    user.email = req.body.user.email;
+    user.password = req.body.user.password;
+
+    // busca el usuario en el index
+    let ok = await auth.checkUserCredentials(user);
+
+    if (ok) res.status(200).json({jwt: auth.generateJWT(user.email)});
     else throw new e.CredentialsError("Credenciales no validas.");
   }
   catch(err) {next(err)}
-});  
+});
 
 module.exports = router;
+
+

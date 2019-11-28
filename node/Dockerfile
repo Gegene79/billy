@@ -1,13 +1,9 @@
-FROM node:8.12-slim
-RUN mkdir /app
+FROM node:12-slim
+RUN mkdir -p /app/node_modules && chown -R node:node /app
 WORKDIR /app
-RUN ls -lah
-RUN apt-get update 
-RUN apt-get install -y build-essential
-RUN apt-get install -y python
-COPY ./src/package.json ./
+COPY --chown=node:node ./src/package.json ./
+COPY --chown=node:node ./src/.env ./
+USER node
 RUN npm install
-COPY ./src/bin ./src/config ./src/models ./src/mqtt ./src/public ./src/routes ./src/app.js ./
-RUN ls -lah
-EXPOSE 3000
+COPY --chown=node:node ./src ./
 CMD npm start

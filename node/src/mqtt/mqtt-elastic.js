@@ -1,16 +1,14 @@
-'use strict';
-const debug = require('debug');
+'use strict'
+const debug = require('debug')('mqtt');
 const mqtt = require('mqtt');
 const e = require('../config/error');
+var el = require('../config/db');
 var mbuffer = new Map();
 const MAXDEV = new Map([["temperature", 5 / 60000],      // temperature => 5ºC per minute
                         ["humidity",    10 / 60000],     // humidity => 10% per minute
                         ["prueba_type", 10 / 60000]]);   // for testing purpose   
-const elastic = require('elasticsearch');
-const el_client = new elastic.Client({
-    host: process.env.EL_HOST,
-    log: 'trace'
-});
+
+
 // opciones de connexiones. "clean"=false evita que se borren los mensajes persistentes
 // al momento de conectarse.
 const mq_client_opts = {
@@ -26,45 +24,46 @@ const mq_client  = mqtt.connect(process.env.MQ_URL,mq_client_opts);
 mq_client.on('connect', () => {
     debug("connected to "+process.env.MQ_URL);
     mq_client.subscribe(process.env.MQ_TOPIC+'/#', pubsub_opts, function (err) {
-        if (err) console.log(err.toString())
+        if (err) console.error(err.toString())
         else debug("suscribed to "+process.env.MQ_TOPIC);
     });
     mq_client.subscribe(process.env.MQ_SENSOR_TOPIC+'/#', pubsub_opts, function (err) {
-        if (err) console.log(err.toString());
-        else debug("suscribed to "+process.env.MQ_TOPIC);
+        if (err) console.error(err.toString());
+        else debug("suscribed to "+process.env.MQ_SENSOR_TOPIC);
     });
 });
 
 mq_client.on('message', (topic, message) => {
     // message in Queue
-    console.log('message in topic ' + topic + ': '+message.toString());
-    let topic_s = topic.split("/")[0];
-    // process message
-    switch(topic_s){
-        case process.env.MQ_TOPIC: 
-            return processMetricMsg(topic,message);
-            break;
-        case process.env.MQ_SENSOR_TOPIC:
-            return processStatusMsg(topic,message);
-            break;
-        default:
-            console.log("Topic no valido: "+topic+", msg: "+message.toString()+ "\n"+err.toString());
+    debug('Message in topic ' + topic + ': ' + message.toString());
+    try{
+        var msg = JSON.parse(message.toString());
+        msg.topic = topic;
+        msg.receivedAt = new Date();
+
+        // process message depending on topic root
+        let topic_root = topic.split("/")[0];
+        switch(topic_root){
+            case process.env.MQ_TOPIC: 
+                msg.value = Number(msg.value);
+                return processMetric(msg);
+
+            case process.env.MQ_SENSOR_TOPIC:
+                return processStatusMsg(msg);
+                
+            default:
+                console.error("Topic no valido: "+topic+", msg: "+message.toString()+ "\n"+err.toString());
+        }
+    } catch (err){
+        console.error("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
+        return;
     }
 });
 
 
-function processMetricMsg(topic,message){
+function processMetric(metric){
 
-    // new object
-    try{
-        var metric = JSON.parse(message.toString());
-    } catch (err){
-        console.log("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
-    }
-
-    metric.value = Number(metric.value);
-    metric.receivedAt = new Date();
-    metric.topic = topic;
+    // complete metric info
     if (!(metric.period)) metric.period = 'm';
     if (!(metric.ts)) metric.ts = new Date();
         else metric.ts = new Date(metric.ts*1000);
@@ -81,35 +80,34 @@ function processMetricMsg(topic,message){
             console.log("Erroneous value, difference of "+valuediff.toFixed(1)+" units in "+(timediff/1000).toFixed(0)+" seconds.");           
         }
     }
-    mbuffer.set(key,metric); // add or replace in Map.
+    mbuffer.set(key,metric); // add or replace in buffer Map.
 
-    el_client.index({
+    el.client.index({
         index: process.env.EL_METRIC_INDEX,
-        type: '_doc', // hard coded
+        type: el.DOC_TYPE, // hard coded
         body: metric
     })
+    .then(
+        (result) => {
+            debug('Saved metric in ' + process.env.EL_METRIC_INDEX);
+        })
     .catch((err)=>{
-        console.log("Imposible insertar la metrica: "+JSON.stringify(metric)+"\n"+err.toString());
+        console.error("Imposible insertar la metrica: "+JSON.stringify(metric)+"\nError: "+err.toString());
     });
 };
 
 
-function processStatusMsg(topic, message){
-    try{
-        var status = JSON.parse(message.toString());
-    } catch (err){
-        console.log("Mensaje no valido: "+message.toString()+ "\n"+err.toString());
-    }
-
-    status.receivedAt = new Date();
-    status.topic = topic;
-    
-    el_client.index({
+function processStatusMsg(message){
+        
+    el.client.index({
         index: process.env.EL_SENSOR_INDEX,
-        type: '_doc', // hard coded
-        body: status
+        type: el.DOC_TYPE,
+        body: message
     })
     .catch((err)=>{
-        console.log("Imposible insertar el status: "+JSON.stringify(status)+"\n"+err.toString());
+        console.error("Imposible insertar el status: "+JSON.stringify(message)+"\n"+err.toString());
     });
 };
+
+exports.processMetric = processMetric
+exports.processStatusMsg = processStatusMsg
