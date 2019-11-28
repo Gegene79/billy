@@ -1,3 +1,5 @@
+
+events {}
 http {
 
     server {
@@ -7,11 +9,11 @@ http {
         }
 
         location /images {
-            root ${IMAGE_DATA};
+            root /images;
         }
 
         location /thumbnails {
-            root ${THUMB_DATA};
+            root /thumbnails;
         }
 
 
@@ -28,11 +30,11 @@ http {
         }
 
         location /images {
-            root ${IMAGE_DATA};
+            root /images;
         }
 
         location /thumbnails {
-            root ${THUMB_DATA};
+            root /images;
         }
 
         location / {
