@@ -6,7 +6,8 @@ http {
         listen 80 default_server;
         server_name petitbilly;
         root /usr/share/nginx/html;
-
+        include  /etc/nginx/mime.types;
+        
         location /api {
             proxy_pass http://${NODE_HOST}:3000;
         }
