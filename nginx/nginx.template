@@ -3,7 +3,10 @@ events {}
 http {
 
     server {
-        listen 80;
+        listen 80 default_server;
+        server_name petitbilly;
+        root /usr/share/nginx/html;
+
         location /api {
             proxy_pass http://${NODE_HOST}:3000;
         }
@@ -16,30 +19,8 @@ http {
             root /thumbnails;
         }
 
-
         location / {
             autoindex on;
-            root /usr/share/nginx/html;
-        }
-    }
-
-    server {
-        listen 443;
-        location /api {
-            proxy_pass http://${NODE_HOST}:3000;
-        }
-
-        location /images {
-            root /images;
-        }
-
-        location /thumbnails {
-            root /images;
-        }
-
-        location / {
-            autoindex on;
-            root /usr/share/nginx/html;
         }
     }
 }
