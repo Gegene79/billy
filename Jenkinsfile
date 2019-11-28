@@ -48,7 +48,7 @@ pipeline {
                         && sudo docker-compose down \""
 
                 echo "Deflate ${prop.TARGET_PATH}/${env.PACKAGE_NAME} and Build"
-                sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"rm -rf ${prop.TARGET_PATH}/current/* && \
+                sh "ssh -p ${prop.TARGET_PORT} ${prop.TARGET_HOST} \"rm -rf ${prop.TARGET_PATH}/current/. && \
                     tar -xzvf ${prop.TARGET_PATH}/${env.PACKAGE_NAME} -C ${prop.TARGET_PATH}/current \
                     && cd ${prop.TARGET_PATH}/current \
                     && chown -R ${prop.TARGET_USER}:${prop.TARGET_GROUP} * && chmod -R 750 * \
