@@ -3,7 +3,10 @@ const { Client } = require('@elastic/elasticsearch')
 
 // connect to elastic and export client
 exports.client = new Client({
-    log: 'error',
+    log : [{
+        type: 'stdio',
+        levels: ['error'] // change these options
+      }],
     node: process.env.EL_URL
  })
 /* log: [{ type: 'stdio',

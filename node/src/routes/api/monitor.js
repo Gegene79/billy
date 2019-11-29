@@ -107,7 +107,7 @@ router.use(function (req, res, next) {
 
 
 // get historical values for all metrics
-router.get('/', function(req, res, next) { // in fact /api
+router.get('/', function(req, res, next) { // in fact /api/monitor
 
     el.client.search({
         index: 'metrics',

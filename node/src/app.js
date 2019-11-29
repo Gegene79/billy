@@ -14,7 +14,7 @@ const debug = require('debug')('main');
 const isProduction = (process.env.NODE_ENV === 'production');
 
 // express rutas por defecto
-var usersRouter = require('./routes/users');
+var usersRouter = require('./routes/auth/users');
 var apiRouter = require('./routes/api/index');
 
 // declaración por defecto de app Express
@@ -28,17 +28,11 @@ app.use(cors()); // añadimos CORS
 app.use(cookieParser(process.env.NODE_SECRET)); //  modificado para descodificar las signed-cookies
 
 
-// APIs sin authentication
-app.use('/users', usersRouter);
+// otros APIs
+app.use('/api', apiRouter);
 
-// redirige hacia las apis con authentication
-app.use('/api', auth.required.unless({path:['/api/users/signup','/api/users/login']}), apiRouter);
-
-// protect all other assets unless index.html
-app.use('/main.html', auth.required, (req,res,next) => next());
-
-// rutas por defecto Express
-app.use(express.static(path.join(__dirname, 'public'))); //auth.required.unless({path:['/index.html','/login.html']})
+// authentication API
+app.use('/auth', usersRouter);
 
 // catch API errors, send 500 status and error JSON
 app.use('/api',(err, req, res, next) => {
@@ -57,7 +51,7 @@ app.use((err, req, res, next) => {
 });
 
 // load mqtt - elastic bridge
-require('./mqtt/mqtt-elastic');
+//require('./mqtt/mqtt-elastic');
 
 // modulo Express por defecto
 module.exports = app;
