@@ -9,31 +9,25 @@ http {
         include  /etc/nginx/mime.types;
 
         location /auth {
-            internal;
-            proxy_pass http://${NODE_HOST}:3000;
-            proxy_set_header Host             $host;
-            proxy_set_header X-Real-IP        $remote_addr;
-            proxy_set_header X-Scheme         $scheme;
-            proxy_pass_request_body  off;
-            proxy_set_header        Content-Length "";
-            proxy_set_header        X-Original-URI $request_uri;
+            proxy_pass http://${NODE_HOST}:3000/auth;
+            error_page 401 = /login.html;
         }
 
         location /api {
-            auth_request http://${NODE_HOST}:3000/auth;
+            auth_request /auth;
             auth_request_set $auth_status $upstream_status;
             error_page 401 = /login.html;
-            proxy_pass http://${NODE_HOST}:3000;
+            proxy_pass http://${NODE_HOST}:3000/api;
         }
 
         location /images {
-            auth_request http://${NODE_HOST}:3000/auth;
+            auth_request /auth;
             error_page 401 = /login.html;
             root /images;
         }
 
         location /thumbnails {
-            auth_request http://${NODE_HOST}:3000/auth;
+            auth_request /auth;
             error_page 401 = /login.html;
             root /thumbnails;
         }

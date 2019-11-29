@@ -113,12 +113,16 @@ router.post('/login', async (req, res, next) => {
     // busca el usuario en el index
     let ok = await checkUserCredentials(user);
     
-    if (ok == true) 
+    if (ok == true) {
+      console.log("Credentials OK.");
       return res.cookie('jwt', generateJWT(user.email))
             .status(200)
             .redirect('/main.html');
-    else 
-      return res.status(401).redirect('/index.html');
+    }
+    else {
+      console.error("Error de login. Redirect hacia login.html.");
+      return res.status(401).redirect('/login.html');
+    }
   }
   catch(err) {next(err)}
 });
@@ -128,10 +132,12 @@ router.get('/', async (req, res, next) => {
     let token = getToken(req);
     jwt.verify(token, process.env.NODE_SECRET, function(err, decoded){
       if (err) {
-        debug("Auth error: %0",err);
+        console.error("Auth error: " + err.message);
         return res.status(401).send({error: err.message});
-      } else 
-      return res.status(200).send();
+      } else {
+        console.log("Auth OK.");
+        return res.status(200).send();
+      }
     });
 });
 
