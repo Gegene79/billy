@@ -29,12 +29,16 @@ http {
             root /thumbnails;
         }
 
+        location = /main.html {
+            auth_request /auth;
+        }
+
         location / {
             index  index.html ;
         }
 
         location @error401 {
-            return 302 /login.html?url=http://$http_host$request_uri&error=$auth_resp_err;
+            return 302 /login.html?url=http://$http_host$request_uri;
         }
     }
 }
