@@ -4,7 +4,7 @@ http {
 
     server {
         listen 80 default_server;
-        server_name petitbilly;
+        server_name www.petitbilly.net petitbilly.net home.petitbilly.net;
         root /usr/share/nginx/html;
         include  /etc/nginx/mime.types;
         error_page 401 = @error401;
@@ -36,6 +36,11 @@ http {
         location / {
             index  index.html ;
         }
+
+        location ~ /.well-known/acme-challenge {
+            allow all;
+            root /acme;
+        } 
 
         location @error401 {
             return 302 /login.html?url=http://$http_host$request_uri;

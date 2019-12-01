@@ -65,6 +65,7 @@ services:
     volumes:
       - images:/images/:ro
       - thumbs:/thumbnails/:ro
+      - ${NGINX_ACME}:/acme
     environment:
       - NODE_HOST=${NODE_HOST}
       - IMAGE_DATA=${IMAGE_DATA}
