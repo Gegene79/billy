@@ -9,6 +9,7 @@ const el = require('../../config/db');
 var { DateTime } = require('luxon');
 
 const getToken = (req) => {
+  debug('Extrayendo token.');
   var token = req.cookies.jwt;
   const { headers: { authorization } } = req;
 
@@ -25,6 +26,7 @@ const getToken = (req) => {
 
 const checkUserCredentials = async (user) => {
 
+  debug('Comprobando credenciales del usuario %s.',user.email);
   let resp = await el.client.search({
     index: process.env.EL_USER_INDEX,
     type: el.DOC_TYPE,
@@ -69,7 +71,7 @@ const insertNewUser = async (user) => {
 
 const generateJWT = (email) => {
   
-  var expirationDate = DateTime.local().plus({month:1}).toJSDate();
+  var expirationDate = DateTime.local().plus({hour:1}).toJSDate();
   
   return jwt.sign( {
     subject: "petitbilly",
