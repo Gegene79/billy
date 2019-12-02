@@ -77,7 +77,7 @@ function processMetric(metric){
 
         if ( (valuediff / timediff) > MAXDEV.get(metric.type) ){ 
             // too much metric change for elapsed time... do not insert data.
-            console.log("Erroneous value, difference of "+valuediff.toFixed(1)+" units in "+(timediff/1000).toFixed(0)+" seconds.");           
+            console.error("Erroneous value for " + metric.name + ", difference of "+valuediff.toFixed(1)+" units in "+(timediff/1000).toFixed(1)+" seconds.");           
         }
     }
     mbuffer.set(key,metric); // add or replace in buffer Map.

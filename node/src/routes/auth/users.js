@@ -3,7 +3,7 @@ const router = require('express').Router();
 //const auth = require('../../config/auth');
 const e = require('../../config/error');
 const jwt = require('jsonwebtoken');
-const debug = require('debug');
+const debug = require('debug')('auth');
 const bcrypt = require('bcryptjs');
 const el = require('../../config/db');
 var { DateTime } = require('luxon');
@@ -13,9 +13,11 @@ const getToken = (req) => {
   const { headers: { authorization } } = req;
 
   if (token) {
+    debug('Token extraido de la cookie.');
     return token;
   }
   else if(authorization && authorization.split(' ')[0] === 'Bearer') {
+    debug('Token extraido del header authorization.');
     return authorization.split(' ')[1];
   }
   else return null;
@@ -28,10 +30,10 @@ const checkUserCredentials = async (user) => {
     type: el.DOC_TYPE,
     body: { "query": { "ids": { "values": user.email } } }
   });
-  debug('Response: %O', resp);
+  debug('Buscamos el usuario %s, response: %O',user.email, resp);
   let total = resp.body.hits.total.value;
   if (total != 1)
-    throw new e.CredentialsError("Usuario no encontrado.");
+    throw new e.CredentialsError("Usuario " + user.email + " no encontrado.");
 
   // compara la contraseña
   let usuario = {};
@@ -49,7 +51,7 @@ const insertNewUser = async (user) => {
     type: el.DOC_TYPE,
     body: {"query": { "ids" : { "values" : user.email } }}
   })
-  if (resp.body.hits.total.value > 0) throw new e.UserAlreadyExistsError("Este usuario ya existe!");
+  if (resp.body.hits.total.value > 0) throw new e.UserAlreadyExistsError("Error: el usuario " + user.email + " ya existe!");
 
   // replace plain password with hashed pass
   user.password = await bcrypt.hash(user.password, saltRounds)
@@ -84,7 +86,7 @@ const generateJWT = (email) => {
 router.post('/signup', async (req, res, next) => {
   try{
     const { body: { user } } = req;
-    console.log('Signing up new user ' + JSON.stringify(user));
+    debug('Signing up new user %s', user.email);
 
     if(!user.email) throw new e.InfoRequiredError("Email necesario.");
     if(!user.password) throw new e.InfoRequiredError("Contraseña necesaria.");
@@ -114,7 +116,7 @@ router.post('/login', async (req, res, next) => {
     let ok = await checkUserCredentials(user);
     
     if (ok == true) {
-      console.log("Credentials OK.");
+      debug("Credentials %s OK", user.email);
       return res.cookie('jwt', generateJWT(user.email))
             .status(200)
             .redirect('/main.html');
@@ -135,7 +137,7 @@ router.get('/', async (req, res, next) => {
         console.error("Auth error: " + err.message);
         return res.status(401).send({error: err.message});
       } else {
-        console.log("Auth OK.");
+        debug("Auth OK.");
         return res.status(200).send();
       }
     });

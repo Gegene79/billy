@@ -3,6 +3,7 @@ var express = require('express');
 var router = express.Router();
 var { DateTime } = require('luxon');
 var el = require ('../../config/db');
+var debug = require('debug')('monitor');
 const min =  60*1000;
 const hour = 60*min;
 
@@ -288,7 +289,7 @@ router.get('/:type/current', function(req, res, next) {
        }
     })
     .then(transform_query)
-    .then((result)=>{console.log(JSON.stringify(result));sendResults(res,result);})
+    .then((result)=>{sendResults(res,result);})
     .catch((error) => next(error));
 });
 
@@ -399,7 +400,7 @@ router.get('/:type/:name/current', function(req, res, next) {
        }
     })
     .then(transform_query)
-    .then((result)=>{console.log(JSON.stringify(result));sendResults(res,result);})
+    .then((result)=>{sendResults(res,result);})
     .catch((error) => next(error));
 });
 
