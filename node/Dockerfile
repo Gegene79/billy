@@ -6,4 +6,4 @@ COPY --chown=node:node ./src/.env ./
 USER node
 RUN npm install
 COPY --chown=node:node ./src ./
-CMD npm start
+CMD DEBUG=auth npm start

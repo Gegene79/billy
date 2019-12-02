@@ -17,11 +17,12 @@ const getToken = (req) => {
     debug('Token extraido de la cookie.');
     return token;
   }
-  else if(authorization && authorization.split(' ')[0] === 'Bearer') {
+  if(authorization && authorization.split(' ') > 1 && authorization.split(' ')[0] === 'Bearer') {
     debug('Token extraido del header authorization.');
-    return authorization.split(' ')[1];
+    return authorization.split(' ')[1]; 
   }
-  else return null;
+  debug('Token no encontrado.');
+  return null;
 };
 
 const checkUserCredentials = async (user) => {
