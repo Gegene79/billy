@@ -43,15 +43,17 @@ app.use('/api',(err, req, res, next) => {
 
 // catch other errors, send 500 status and redirecto to login
 app.use((err, req, res, next) => {
-    console.error("Caught error, redirecting to login.\r\nStacktrace: "+err.stacktrace);
+    console.error("Caught error: "+JSON.stringify(err)+ "\r\nRequest: "+ JSON.stringify(req));
     err.status = err.status || 500;
-    if (err.constructor.name == "CredentialsError" || err.constructor.name == "UnauthorizedError")
+    if (err.constructor.name == "CredentialsError" || err.constructor.name == "UnauthorizedError") {
+        debug("Error de authenticación, redirigemos al login.html.")
         return res.status(err.status).redirect('/login.html');
+    }
     return res.status(err.status).redirect('/index.html');
 });
 
 // load mqtt - elastic bridge
-require('./mqtt/mqtt-elastic');
+if (isProduction) require('./mqtt/mqtt-elastic');
 
 // modulo Express por defecto
 module.exports = app;
