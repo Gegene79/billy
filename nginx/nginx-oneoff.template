@@ -11,6 +11,7 @@ http {
             root /certbot;
         }
 
-        include locations.conf
+        include /etc/nginx/locations.conf;
+
     }
 }
