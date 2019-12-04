@@ -4,28 +4,35 @@ http {
 
     server {
         listen 80 default_server;
-        include locations.conf
+        #include locations.conf;
+        #allow 192.168.1.0/24;
+        #deny all;
 
         location ~ /.well-known/acme-challenge {
             default_type "text/plain";
             allow all;
             root /certbot;
-        } 
+        }
+
+        location / {
+            return 301 https://$host$request_uri;
+        }
     }
 
     server {
-        listen 443 ssl;
-        server_name home.petitbilly.net;
+        listen 443 ssl http2;
+        server_name ${DOMAIN};
         
         root /usr/share/nginx/html;
         include  /etc/nginx/mime.types;
         error_page 401 = @error401;
 
-        ssl_certificate /letsencrypt/live/home.petitbilly.net/fullchain.pem;
-        ssl_certificate_key /letsencrypt/live/home.petitbilly.net/privkey.pem;
-        include /letsencrypt/options-ssl-nginx.conf;
+        ssl_certificate /usr/share/nginx/certificates/fullchain.pem;
+        ssl_certificate_key /usr/share/nginx/certificates/privkey.pem;
+        include /etc/nginx/options-ssl-nginx.conf;
         ssl_dhparam /letsencrypt/ssl-dhparams.pem;
 
+        include /etc/nginx/locations.conf;
         
     }
 }

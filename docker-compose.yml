@@ -1,9 +1,11 @@
 # 
-# Docker compose para crear un front con 2 backend: mongo y un broker MQTT
+# Docker compose para crear un front con 2 backend: elastic y un broker MQTT
 #
 
 version: "3.5"
 services:
+
+  ### elasticsearch backend
   elastic:
     image: billy-elastic
     container_name: billy-elastic
@@ -23,8 +25,8 @@ services:
     networks: 
      - billy-network
 
+  ### MQTT queue manager to receive sensor data
   mqtt:
-    # -p 1883:1883 --name billy-mosquitto -v /docker/mosquitto/config/:/mosquitto/conf/ billy-mosquitto
     image: billy-mqtt
     container_name: billy-mqtt
     build: ./mqtt/
@@ -36,8 +38,8 @@ services:
     networks:
      - billy-network
 
+  ### Node backend to serve API. Depends on elastic and MQTT
   node:
-    # -u "node" -p 3000:3000 --name billy-node billy-node
     image: billy-node
     container_name: billy-node
     build: ./node/
@@ -50,6 +52,7 @@ services:
     networks:
      - billy-network
 
+  ### nginx frontend with SSL enabled
   nginx:
     image: billy-nginx
     container_name: billy-nginx
@@ -65,24 +68,15 @@ services:
     volumes:
       - images:/images/:ro
       - thumbs:/thumbnails/:ro
-      - certbot:/certbot
       - letsencrypt:/letsencrypt
-    args:
-      - DH_PARAM=${NGINX_DHPARAM}
     environment:
       - NODE_HOST=${NODE_HOST}
-      - IMAGE_DATA=${IMAGE_DATA}
-      - THUMB_DATA=${THUMB_DATA}
+      - DOMAIN=${DOMAIN}
+      - EMAIL=${EMAIL}
     networks:
      - billy-network
   
- # certbot:
- #   image: certbot/certbot
- #   container_name: billy-certbot
- #   volumes:
- #     - certbot:/var/www/certbot
- #     - letsencrypt:/etc/letsencrypt
-
+  ### Jupyter to analyse data
   jupyter:
     image: billy-jupyter
     container_name: billy-jupyter
@@ -99,10 +93,12 @@ services:
     networks: 
      - billy-network
 
+### Only one network to connect dockers
 networks:
   billy-network:
     name: billy-network
 
+### Bind volumes to persist data
 volumes:
   images: 
     driver: local
@@ -134,12 +130,6 @@ volumes:
       type: "none"
       o: "bind"
       device: "${JUPYTER_DATA}"
-  certbot: 
-    driver: local
-    driver_opts: 
-      type: "none"
-      o: "bind"
-      device: "${NGINX_CERTBOT}"
   letsencrypt: 
     driver: local
     driver_opts: 
