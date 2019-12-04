@@ -64,7 +64,7 @@ services:
       - node
     ports:
       - "80:80"
-      - "433:433"
+      - "443:443"
     volumes:
       - images:/images/:ro
       - thumbs:/thumbnails/:ro
