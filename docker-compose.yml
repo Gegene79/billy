@@ -67,6 +67,8 @@ services:
       - thumbs:/thumbnails/:ro
       - certbot:/certbot
       - letsencrypt:/letsencrypt
+    args:
+      - DH_PARAM=${NGINX_DHPARAM}
     environment:
       - NODE_HOST=${NODE_HOST}
       - IMAGE_DATA=${IMAGE_DATA}

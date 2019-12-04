@@ -4,6 +4,7 @@ include  /etc/nginx/mime.types;
 error_page 401 = @error401;
 
 allow 192.168.1.0/24;
+deny all;
 
 location /auth {
     proxy_pass http://${NODE_HOST}:3000/auth;

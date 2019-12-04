@@ -15,16 +15,16 @@ http {
 
     server {
         listen 443 ssl;
-        server_name www.petitbilly.net petitbilly.net;
+        server_name home.petitbilly.net;
         
         root /usr/share/nginx/html;
         include  /etc/nginx/mime.types;
         error_page 401 = @error401;
 
-        ssl_certificate /etc/letsencrypt/live/petitbilly.net/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/petitbilly.net/privkey.pem;
-        include /etc/letsencrypt/options-ssl-nginx.conf;
-        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+        ssl_certificate /letsencrypt/live/home.petitbilly.net/fullchain.pem;
+        ssl_certificate_key /letsencrypt/live/home.petitbilly.net/privkey.pem;
+        include /letsencrypt/options-ssl-nginx.conf;
+        ssl_dhparam /letsencrypt/ssl-dhparams.pem;
 
         
     }
