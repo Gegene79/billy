@@ -4,46 +4,28 @@ http {
 
     server {
         listen 80 default_server;
-        server_name www.petitbilly.net petitbilly.net home.petitbilly.net;
+        include locations.conf
+
+        location ~ /.well-known/acme-challenge {
+            default_type "text/plain";
+            allow all;
+            root /certbot;
+        } 
+    }
+
+    server {
+        listen 443 ssl;
+        server_name www.petitbilly.net petitbilly.net;
+        
         root /usr/share/nginx/html;
         include  /etc/nginx/mime.types;
         error_page 401 = @error401;
 
-        location /auth {
-            proxy_pass http://${NODE_HOST}:3000/auth;
-        }
+        ssl_certificate /etc/letsencrypt/live/petitbilly.net/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/petitbilly.net/privkey.pem;
+        include /etc/letsencrypt/options-ssl-nginx.conf;
+        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
-        location /api {
-            auth_request /auth;
-            auth_request_set $auth_status $upstream_status;
-            proxy_pass http://${NODE_HOST}:3000/api;
-        }
-
-        location /images {
-            auth_request /auth;
-            root /images;
-        }
-
-        location /thumbnails {
-            auth_request /auth;
-            root /thumbnails;
-        }
-
-        location = /main.html {
-            auth_request /auth;
-        }
-
-        location / {
-            index  index.html ;
-        }
-
-        location ~ /.well-known/acme-challenge {
-            allow all;
-            root /acme;
-        } 
-
-        location @error401 {
-            return 302 /login.html?url=http://$http_host$request_uri;
-        }
+        
     }
 }

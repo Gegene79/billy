@@ -65,7 +65,8 @@ services:
     volumes:
       - images:/images/:ro
       - thumbs:/thumbnails/:ro
-      - ${NGINX_ACME}:/acme
+      - certbot:/certbot
+      - letsencrypt:/letsencrypt
     environment:
       - NODE_HOST=${NODE_HOST}
       - IMAGE_DATA=${IMAGE_DATA}
@@ -73,6 +74,13 @@ services:
     networks:
      - billy-network
   
+ # certbot:
+ #   image: certbot/certbot
+ #   container_name: billy-certbot
+ #   volumes:
+ #     - certbot:/var/www/certbot
+ #     - letsencrypt:/etc/letsencrypt
+
   jupyter:
     image: billy-jupyter
     container_name: billy-jupyter
@@ -124,3 +132,15 @@ volumes:
       type: "none"
       o: "bind"
       device: "${JUPYTER_DATA}"
+  certbot: 
+    driver: local
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${NGINX_CERTBOT}"
+  letsencrypt: 
+    driver: local
+    driver_opts: 
+      type: "none"
+      o: "bind"
+      device: "${NGINX_LETSENCRYPT}"

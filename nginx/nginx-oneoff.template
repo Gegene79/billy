@@ -1,0 +1,16 @@
+
+events {}
+http {
+
+    server {
+        listen 80;
+        
+        location ~ /.well-known/acme-challenge {
+            default_type "text/plain";
+            allow all;
+            root /certbot;
+        }
+
+        include locations.conf
+    }
+}
