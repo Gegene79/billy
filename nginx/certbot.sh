@@ -1,4 +1,4 @@
-certbot certonly \
+echo "certbot certonly \
         --config-dir /letsencrypt \
 		--agree-tos \
 		--domains "$DOMAIN" \
@@ -7,7 +7,7 @@ certbot certonly \
 		--expand \
 		--noninteractive \
 		--webroot \
-		--webroot-path /certbot \
+		--webroot-path /certbot" \
 	    || true
 
 if [[ -f "/letsencrypt/live/$DOMAIN/privkey.pem" ]]; then

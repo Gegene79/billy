@@ -23,7 +23,6 @@ http {
         listen 443 ssl http2;
         server_name ${DOMAIN};
         
-        root /usr/share/nginx/html;
         include  /etc/nginx/mime.types;
         error_page 401 = @error401;
 
