@@ -26,12 +26,11 @@ http {
         include  /etc/nginx/mime.types;
         error_page 401 = @error401;
 
-        ssl_certificate /usr/share/nginx/certificates/fullchain.pem;
-        ssl_certificate_key /usr/share/nginx/certificates/privkey.pem;
+        ssl_certificate /etc/letsencrypt/live/$server_name/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/$server_name/privkey.pem;
         include /etc/nginx/options-ssl-nginx.conf;
-        ssl_dhparam /letsencrypt/ssl-dhparams.pem;
+        ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
         include /etc/nginx/locations.conf;
-        
     }
 }

@@ -68,7 +68,7 @@ services:
     volumes:
       - images:/images/:ro
       - thumbs:/thumbnails/:ro
-      - letsencrypt:/letsencrypt
+      - letsencrypt:/etc/letsencrypt
     environment:
       - NODE_HOST=${NODE_HOST}
       - DOMAIN=${DOMAIN}
