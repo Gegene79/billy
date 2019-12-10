@@ -2,10 +2,6 @@ FROM nginx:1.17-alpine
 RUN apk add certbot
 
 RUN mkdir /images && mkdir /thumbnails && mkdir /certbot && mkdir -p /etc/letsencrypt
-# permisos al grupo nginx (101) en los certificados
-RUN chown :101 /etc/letsencrypt
-RUN chmod 775 /etc/letsencrypt
-RUN chmod g+s /etc/letsencrypt
 
 # Sube los scripts y ficheros de configuración
 COPY --chown=nginx:nginx certbot.sh /opt/certbot.sh

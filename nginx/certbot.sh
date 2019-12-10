@@ -5,6 +5,12 @@ do
 	echo `date`" Renovar Certificados.";
 	certbot certonly -v --agree-tos --domains "$DOMAIN" --email "$EMAIL" --no-eff-email --expand --noninteractive --webroot --webroot-path /certbot
 	ret=$?;
+
+	### Cambiar al grupo 101 (nginx) los certificados
+	chown -R :nginx /etc/letsencrypt
+	chmod -R 750 /etc/letsencrypt
+	chmod g+s /etc/letsencrypt
+
 	if [ $ret=0 ]; 
 		then
 		echo "Certificados renovados, recargar nginx."
