@@ -90,6 +90,7 @@ services:
       - images:/images/:ro
       - jupyter:/home/jovyan/
       - thumbs:/thumbnails/
+      - letsencrypt:/etc/letsencrypt:ro
     networks: 
      - billy-network
 
