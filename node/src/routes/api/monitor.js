@@ -111,7 +111,7 @@ router.use(function (req, res, next) {
 router.get('/', function(req, res, next) { // in fact /api/monitor
 
     el.client.search({
-        index: 'metrics',
+        index: process.env.EL_METRIC_INDEX,
         type: '_doc',
         body: {
                 "aggs": {
@@ -146,7 +146,7 @@ router.get('/', function(req, res, next) { // in fact /api/monitor
 router.get('/current', function(req, res, next) {
     
     el.client.search({
-        index: 'metrics',
+        index: process.env.EL_METRIC_INDEX,
         type: '_doc',
         body: 
         {
@@ -170,7 +170,7 @@ router.get('/current', function(req, res, next) {
 router.get('/sensor/current', function(req, res, next) {
     
     el.client.search({
-        index: 'sensors',
+        index: process.env.EL_SENSOR_INDEX,
         type: '_doc',
         body: 
         {
@@ -218,7 +218,7 @@ router.get('/:type', function(req, res, next) {
    };
 
     el.client.search({
-        index: 'metrics',
+        index: process.env.EL_METRIC_INDEX,
         type: '_doc',
         body: obj
     })
@@ -232,7 +232,7 @@ router.get('/:type', function(req, res, next) {
 router.get('/:type/current', function(req, res, next) {
 
     el.client.search({
-        index: 'metrics',
+        index: process.env.EL_METRIC_INDEX,
         type: '_doc',
         body: 
         {
@@ -329,7 +329,7 @@ router.get('/:type/:name', function(req, res, next) {
    };
    
     el.client.search({
-        index: 'metrics',
+        index: process.env.EL_METRIC_INDEX,
         type: '_doc',
         body: obj
     })
@@ -342,7 +342,7 @@ router.get('/:type/:name', function(req, res, next) {
 router.get('/:type/:name/current', function(req, res, next) {
 
     el.client.search({
-        index: 'metrics',
+        index: process.env.EL_METRIC_INDEX,
         type: '_doc',
         body: 
         {

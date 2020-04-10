@@ -6,7 +6,7 @@ envsubst '${NODE_HOST} ${DOMAIN}' < /etc/nginx/locations.template > /etc/nginx/l
 envsubst '${NODE_HOST} ${DOMAIN}' < /etc/nginx/nginx.template > /etc/nginx/nginx.conf
 
 ### Lanzar el script de renovación de certificados en background
-/opt/certbot.sh &
+/opt/certbot.sh > /etc/letsencrypt/certbot_script.log 2>&1 &
 
 ### Lanzar nginx sin el daemonio para tenerlo como PID principal 
 nginx -g "daemon off;"

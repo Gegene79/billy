@@ -1,63 +1,58 @@
 'use strict'
-var db = require('../../common/db');
 var express = require('express');
-var img = require('../../common/fsdbsync');
-var db  = require('../../common/db');
 var router = express.Router();
-var limit = 50;
-var skip = 0;
+var { DateTime } = require('luxon');
+var el = require ('../../config/db');
+var debug = require('debug')('gallery');
+//var chrono = require('chrono-node');
+var from = 0;
+var size = 50;
 
 /*** Defaults parameters ***/
-
-router.use(function (req, res, next) {
-
-    if (req.query.limit){
-        limit = parseInt(req.query.limit);
-    }
-    if (req.query.skip){
-        skip = parseInt(req.query.skip);
-    }
-
-    next();
-});
 
 function sendresult(res,result){
     res.contentType('application/json');
     res.status(200).json(result);
 };
 
+router.use(function (req, res, next) {
 
-/* GET  */
-router.get('/scan', function(req, res, next) {
-    img.scan();
-    res.json("{result: 'ok'}");
+    if (req.query.from){
+        from = parseInt(req.query.from);
+    } else from = 0;
+
+    if (req.query.size){
+        size = parseInt(req.query.size);
+    } else size = 50;
+
+    next();
 });
 
-router.get('/browseimages', function(req, res, next) {
-    
-    let query = {};
-    
-    db.browseImages(query, skip, limit)
-    .then(function(result){
-
-        sendresult(res,result);
-    })
-    .catch(function(error){
-        next(error);
-    });
-});
-
-router.get('/searchimages', function(req, res, next) {
+router.get('/search', function(req, res, next) {
     
     let query = req.query.q;
+    
+    let fecha = chrono.parseDate(query); 
 
-    db.searchImages(query, skip, limit)
-    .then(function(result){
-        sendresult(res,result);
+    el.client.search({
+        index: process.env.EL_IMG_INDEX,
+        type: '_doc',
+        body: {"from" : from, "size" : size,
+            "track_total_hits": "true",
+            "query" : {
+                "multi_match" : {
+                    "query": q,
+                    "type": "most_fields",
+                    "fields": ["tokens", "year_month"]
+                }
+            },
+            "sort": [
+                {"_score": "desc"},
+                {"ts": "desc"}
+            ]}
     })
-    .catch(function(error){
-        next(error);
-    });
+    .then((result)=>sendResults(res,result))
+    .catch((error) => next(error));
 });
 
 module.exports = router;
