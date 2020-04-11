@@ -7,6 +7,6 @@ RUN dpkg-reconfigure locales
 RUN mkdir /images && mkdir /thumbnails
 RUN chown -R jovyan:users /images /thumbnails /home/jovyan
 USER jovyan:users
-RUN pip install elasticsearch oauth2client httplib2 google-auth pillow google_auth_oauthlib
+RUN pip install elasticsearch oauth2client httplib2 google-auth pillow google_auth_oauthlib dateparser
 COPY --chown=jovyan:users config/jupyter_notebook_config.json /home/jovyan/.jupyter/
 CMD start.sh jupyter lab

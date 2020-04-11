@@ -124,14 +124,17 @@ function updateCurrentVal(){
             // update radial indicator
             if (metric.name=="EXTERIOR"){
                 var radialObj = $('#ExteriorIndicator').data('radialIndicator');
-                radialObj.animate(metric.value);
+                if (!isNaN(metric.value)) radialObj.animate(metric.value);
             }
 
-            $("#temp-"+metric.name).text(parseFloat(metric.value).toFixed(1));
+            if (!isNaN(metric.value)) $("#temp-"+metric.name).text(parseFloat(metric.value).toFixed(1)) 
+            else $("#temp-"+metric.name).text("--");
             $("#temp-ts-"+metric.name).text(ts);
-            $("#temp-max-"+metric.name+" span").text(parseFloat(metric.max).toFixed(1)+"ºC");
+            if (!isNaN(metric.max)) $("#temp-max-"+metric.name+" span").text(parseFloat(metric.max).toFixed(1)+"ºC")
+            else $("#temp-max-"+metric.name+" span").text("--");
             $("#temp-avg-"+metric.name).text(s_dif+"ºC");
-            $("#temp-min-"+metric.name+" span").text(parseFloat(metric.min).toFixed(1)+"ºC");
+            if (!isNaN(metric.min))  $("#temp-min-"+metric.name+" span").text(parseFloat(metric.min).toFixed(1)+"ºC")
+            else $("#temp-min-"+metric.name+" span").text("--");
             
         });
     });
