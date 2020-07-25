@@ -112,13 +112,16 @@ function updateCurrentVal(){
         data.forEach( (metric) => {
             
             let dif = (parseFloat(metric.d1_value) - parseFloat(metric.value))
-            let s_dif = (dif>0?'+':'') + dif.toFixed(1);
+            let s_dif = '--';
+            if (!isNaN(dif)) s_dif = (dif>0?'+':'') + dif.toFixed(1);
             let m = DateTime.fromISO(metric.ts);
-            let ts = "";
-            if(m < DateTime.local().startOf('day')){
-                ts = m.setLocale('ES').toFormat('ccc d LLL HH:mm');
-            } else {
-                ts = m.toFormat('HH:mm');
+            let ts = "-:-";
+            if (!isNaN(m.getTime())) {
+                if(m < DateTime.local().startOf('day')){
+                    ts = m.setLocale('ES').toFormat('ccc d LLL HH:mm');
+                } else {
+                    ts = m.toFormat('HH:mm');
+                };
             };
 
             // update radial indicator

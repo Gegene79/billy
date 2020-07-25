@@ -1,0 +1,2 @@
+import sensor
+sensor.main()

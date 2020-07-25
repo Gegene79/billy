@@ -1,0 +1,22 @@
+{
+  "sensor":{
+    "name": "HABITACION"
+  },
+  "wifi": {
+    "essid": "",
+    "pass": ""
+  },
+  "mqtt": {
+    "host": "192.168.1.2",
+    "port": 980,
+    "pass": "",
+    "topic_base": "metrics/",
+    "topic_path": "casa/",
+    "user": ""
+  },
+  "api": {
+    "base_url": "http://192.168.1.2",
+    "email": "",
+    "pass": ""
+  }
+}
