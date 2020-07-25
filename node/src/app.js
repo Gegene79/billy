@@ -8,7 +8,6 @@ var logger = require('morgan');
 const e = require('./config/error');
 const cors = require('cors');
 const env = require('dotenv').config();
-const auth = require('./config/auth');
 const debug = require('debug')('main');
 //Configure isProduction variable
 const isProduction = (process.env.NODE_ENV === 'production');

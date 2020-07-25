@@ -1,6 +1,5 @@
 'use strict'
 const router = require('express').Router();
-//const auth = require('../../config/auth');
 const e = require('../../config/error');
 const jwt = require('jsonwebtoken');
 const debug = require('debug')('auth');
@@ -94,7 +93,7 @@ router.post('/signup', async (req, res, next) => {
     if(!user.email) throw new e.InfoRequiredError("Email necesario.");
     if(!user.password) throw new e.InfoRequiredError("Contraseña necesaria.");
 
-    let ok = auth.insertNewUser(user);
+    let ok = await insertNewUser(user);
     
     if (ok) return res.cookie('jwt', auth.generateJWT(user.email))
                       .status(200)
